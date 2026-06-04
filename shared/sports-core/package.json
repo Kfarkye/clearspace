@@ -1,0 +1,16 @@
+{
+  "name": "@clearspace/sports-core",
+  "version": "1.0.0",
+  "description": "Shared sports data infrastructure: entity resolution, ESPN odds enrichment, Firestore circuit breaker",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./entity-resolution": "./entity-resolution.js",
+    "./espn-odds": "./espn-odds.js",
+    "./db-breaker": "./db-breaker.js",
+    "./normalizers": "./normalizers.js",
+    "./agents": "./agents.js"
+  },
+  "files": ["*.js", "*.d.ts"]
+}

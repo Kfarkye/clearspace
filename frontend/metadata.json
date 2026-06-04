@@ -1,0 +1,8 @@
+
+{
+  "name": "Truth",
+  "description": "A premium, ultra-minimalist intelligence layer designed with absolute precision, generous whitespace, and a sophisticated warm alabaster, sand, and bronze aesthetic.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

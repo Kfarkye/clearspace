@@ -1,0 +1,6 @@
+{
+  "name": "Blank App",
+  "description": "A clean, blank starting canvas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

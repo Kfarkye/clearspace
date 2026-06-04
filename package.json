@@ -1,0 +1,27 @@
+{
+  "name": "truth",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared/sports-core",
+    "shared/auth"
+  ],
+  "scripts": {
+    "dev-frontend": "npm run dev --prefix frontend",
+    "dev-backend": "npm run dev --prefix backend",
+    "dev": "concurrently \"npm run dev-frontend\" \"npm run dev-backend\"",
+    "build": "npm run build --prefix frontend",
+    "start": "node backend/server.js"
+  },
+  "devDependencies": {
+    "@rollup/wasm-node": "^4.61.0",
+    "concurrently": "latest",
+    "rollup": "^4.60.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "^4.61.0"
+  },
+  "dependencies": {
+    "esbuild": "^0.28.0"
+  }
+}

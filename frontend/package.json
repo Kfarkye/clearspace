@@ -1,0 +1,28 @@
+{
+  "name": "truth-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/genai": "latest",
+    "@react-oauth/google": "^0.13.5",
+    "dompurify": "latest",
+    "framer-motion": "latest",
+    "lucide-react": "latest",
+    "marked": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "recharts": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@vitejs/plugin-react": "^4",
+    "typescript": "latest",
+    "vite": "^5"
+  }
+}

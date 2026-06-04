@@ -1,0 +1,19 @@
+{
+  "name": "@clearspace/auth",
+  "version": "1.0.0",
+  "description": "Shared Google OAuth session auth: JWT sessions, httpOnly cookies, Express middleware",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./session": "./session.js",
+    "./google-verify": "./google-verify.js",
+    "./middleware": "./middleware.js",
+    "./routes": "./routes.js"
+  },
+  "files": ["*.js"],
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3",
+    "cookie-parser": "^1.4.7"
+  }
+}
