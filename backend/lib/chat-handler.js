@@ -1,6 +1,7 @@
 // ============================================================================
 // Chat Handler — Enterprise Gemini 3.5 Flash chat engine
 // Features: AbortControllers, Zero-Leak Timeouts, LRU Caching, ReDoS Immunity
+// Bugfix: Semantic Tool Boundaries for Live Game Tracking vs. Macro Betting
 // ============================================================================
 
 import { GoogleGenAI, Type } from '@google/genai';
@@ -69,11 +70,12 @@ async function searchYouTubeCached(query) {
   return videos;
 }
 
-// ── Tool Declarations ─────────────────────────────────────────────────────
+// ── Tool Declarations (Semantic Guardrails Applied) ───────────────────────
 
 const sportsToolDeclaration = {
   name: 'delegate_sports_query',
-  description: 'Fetches live or scheduled sports data for a specific team or league on a specific date.',
+  // CRITICAL FIX: Explicitly map "track", "live", and "bet status" to this tool
+  description: 'Fetches live scoreboards, game status, and scheduled sports data. CRITICAL: Use this tool whenever a user asks to TRACK a game, monitor a live event, check a live score, or check the status of a game they placed a bet on.',
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -114,7 +116,8 @@ const playerPropToolDeclaration = {
 
 const bettingTrendsToolDeclaration = {
   name: 'get_betting_trends',
-  description: 'Fetches real-time ATS, Over/Under, Run Line, and Moneyline betting trend records for MLB teams.',
+  // CRITICAL FIX: Negative constraints. Explicitly forbid live game tracking.
+  description: 'Fetches historical ATS, Over/Under, Run Line, and Moneyline betting trend records to synthesize NEW betting angles. DO NOT use this tool to track live games, check live scores, or monitor an existing bet.',
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -144,8 +147,12 @@ function buildSystemPrompt() {
   const dateContext = now.toISOString().split('T')[0].replace(/-/g, '');
   const yearContext = now.getFullYear();
 
-  return `You are AURA, an elite AI-native sports intelligence platform and world-class betting sharp.
+  return `You are AURA, an elite AI-native sports intelligence platform, live game tracker, and world-class betting sharp.
 TEMPORAL CONTEXT: The current year is ${yearContext}. Target modern context. Current Date: ${dateContext}
+
+TOOL ROUTING PROTOCOL (STRICT):
+1. LIVE TRACKING & SCORES: If a user asks to "track" a game, "check my bet", monitor an ongoing game, or check a live score, you MUST use \`delegate_sports_query\`.
+2. TRENDS & NEW BETS: Use \`get_betting_trends\` ONLY when asked for historical records (ATS, O/U) or to find new value bets. Do NOT use it for live game tracking.
 
 When the user asks for sports data you MUST extract parameters in canonical format and trigger the appropriate tool.
 If a temporal context is clearly provided (like "yesterday", "last week", or a specific date), parse it to YYYYMMDD format exactly. If no temporal context is provided, DO NOT provide a date parameter. Let the tool default to live data.
@@ -169,7 +176,6 @@ Banned: leverage, optimize, streamline, unlock, elevate, holistic, robust, actio
 }
 
 // ── ReDoS-Immune Markdown Parser ──────────────────────────────────────────
-// Uses O(N) string traversal instead of vulnerable Regex backtracking.
 
 function extractJsonFromMarkdown(text, language) {
   if (!text) return null;
@@ -183,14 +189,12 @@ function extractJsonFromMarkdown(text, language) {
 
   try {
     let rawJson = text.substring(contentStart, endIndex).trim();
-    // Strip control characters that break JSON.parse
     rawJson = rawJson.replace(/[\x00-\x1F\x7F]/g, ch => {
       if (ch === '\n') return '\\n';
       if (ch === '\r') return '\\r';
       if (ch === '\t') return '\\t';
       return '';
     });
-    // Fix LLM hallucinated trailing commas (e.g. "odds": 150, })
     rawJson = rawJson.replace(/,\s*([\]}])/g, '$1');
     return JSON.parse(rawJson);
   } catch (error) {
@@ -210,23 +214,19 @@ function getAiClient() {
       aiClient = new GoogleGenAI({ apiKey });
     } else {
       aiClient = new GoogleGenAI({
-        vertexai: true,
-        project: process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0281999829',
-        location: process.env.GOOGLE_CLOUD_LOCATION || 'global',
+        vertexai: {
+          project: process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0281999829',
+          location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+        }
       });
     }
   }
   return aiClient;
 }
 
-/**
- * Processes user intent STATELESSLY with strict network abort controllers and zero-leak timers.
- * Uses generateContent with contents array instead of chats.create to avoid server-side memory bloat.
- */
 export async function processIntent(message, history, signal) {
   const ai = getAiClient();
 
-  // Stateless generation format — avoids chats.create memory bloat on server
   const contents = [
     ...(history || []).map(h => ({ role: h.role, parts: [{ text: h.content }] })),
     { role: 'user', parts: [{ text: message }] },
@@ -234,7 +234,6 @@ export async function processIntent(message, history, signal) {
 
   if (signal?.aborted) throw new Error('Client Disconnected');
 
-  // Zero-Leak Timeout Implementation
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error('Engine Timeout')), ENGINE_TIMEOUT_MS);
@@ -258,7 +257,7 @@ export async function processIntent(message, history, signal) {
       timeoutPromise,
     ]);
   } finally {
-    clearTimeout(timeoutId); // Destroy timer immediately to prevent memory leak
+    clearTimeout(timeoutId); 
   }
 
   if (signal?.aborted) throw new Error('Client Disconnected');
@@ -268,7 +267,7 @@ export async function processIntent(message, history, signal) {
   // ── Handle Concurrent Tool Calls ─────────────────────────────────────────
   if (response.functionCalls && response.functionCalls.length > 0) {
     const toolExecutions = response.functionCalls.map(async (call) => {
-      if (signal?.aborted) return null; // Early exit on client drop
+      if (signal?.aborted) return null;
 
       console.log(`[CHAT] Tool triggered: ${call.name}`, call.args);
 
@@ -288,9 +287,8 @@ export async function processIntent(message, history, signal) {
 
           case 'get_betting_trends': {
             const { team, trend_type } = call.args || {};
-            const isAll = trend_type === 'all';
+            const isAll = trend_type === 'all' || !team;
 
-            // allSettled prevents cascading failures across trend fetchers
             const results = await Promise.allSettled([
               (isAll || trend_type === 'ats') ? fetchAtsRecord(ai, team).then(applyAtsFilters) : Promise.resolve(undefined),
               (isAll || trend_type === 'ou') ? fetchOuRecord(ai, team).then(applyAtsFilters) : Promise.resolve(undefined),
@@ -299,10 +297,8 @@ export async function processIntent(message, history, signal) {
             ]);
 
             const getVal = (res) => res.status === 'fulfilled' ? res.value : undefined;
-
             const trendData = { ats: getVal(results[0]), ou: getVal(results[1]), runline: getVal(results[2]), moneyline: getVal(results[3]) };
 
-            // Synthesize structured betting angles from the enriched trend data
             let angles = null;
             try {
               angles = await generateBettingAngles(ai, { team, trends: trendData });
@@ -312,7 +308,7 @@ export async function processIntent(message, history, signal) {
 
             return {
               id: randomUUID(), type: 'BETTING_TRENDS', resolution_state: 'RESOLVED',
-              context_summary: `${team} Betting Trends`,
+              context_summary: `${team && team !== 'all' ? team.toUpperCase() : 'League-Wide'} Betting Trends`,
               data: { ...trendData, ...(angles ? { best_bets: angles.angles, analysis_markdown: angles.analysis_markdown } : {}) },
             };
           }
@@ -383,8 +379,6 @@ function sanitizeChatInput(raw) {
 
 export function mountChatRoute(app) {
   app.post('/api/chat', async (req, res) => {
-
-    // Zombie Request Prevention: If the user closes the browser mid-generation, abort downstream processes
     const abortController = new AbortController();
     req.on('close', () => {
       abortController.abort();
@@ -407,7 +401,6 @@ export function mountChatRoute(app) {
       }
 
       // Token Limitation via Context Size Pruning
-      // Walk backwards to keep the most recent context while guarding TPM quotas
       let currentChars = 0;
       const history = [];
       const historyArray = Array.isArray(rawHistory) ? rawHistory : [];
