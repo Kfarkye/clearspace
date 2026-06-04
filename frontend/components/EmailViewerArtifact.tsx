@@ -1,16 +1,16 @@
 // ============================================================================
 // EmailViewerArtifact — Inline email renderer
 //
-// Design: Minimalist mail reader. No chrome, no noise. Content-first.
-// Gmail deep-link via threadId. Sandboxed HTML body. Auto-sizing iframe.
+// Design: Apple Mail / iOS Vision. Profoundly minimal, material-first.
+// Features: Zero-crash SWR cache, dynamic iframe sandboxing, spring physics.
 // ============================================================================
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Copy, Check, Paperclip, ChevronDown, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================================================
-// Types
+// Types & Physics
 // ============================================================================
 
 interface EmailAttachment {
@@ -39,15 +39,19 @@ interface EmailViewerArtifactProps {
   onReply?: (prompt: string) => void;
 }
 
+// Apple-esque Spring Physics: Critically damped, zero bounce
+const SPRING_TRANSITION = { type: 'spring', bounce: 0, duration: 0.5, mass: 0.8, damping: 18 };
+const MICRO_SPRING = { type: 'spring', bounce: 0, duration: 0.3, damping: 15 };
+
 // ============================================================================
-// Sandboxed HTML Preview
+// Sandboxed HTML Preview (Styled with Apple Editorial Typography)
 // ============================================================================
 
 const SafeMailIframe = React.memo(({ html }: { html: string }) => {
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(200);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(100);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!iframeRef.current) return;
     const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
     if (!doc) return;
@@ -55,40 +59,43 @@ const SafeMailIframe = React.memo(({ html }: { html: string }) => {
     doc.open();
     doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       body {
-        font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-        margin: 0; padding: 20px 24px;
-        color: #1A1A18;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        margin: 0; padding: 24px 32px;
+        color: #1D1D1F;
         background: transparent;
         -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         word-break: break-word;
-        line-height: 1.75;
-        font-size: 13px;
+        line-height: 1.65;
+        font-size: 14.5px;
+        letter-spacing: -0.01em;
       }
-      a { color: #8C7A6B; text-decoration: underline; text-underline-offset: 3px; }
-      a:hover { color: #1A1A18; }
-      img { max-width: 100%; height: auto; display: block; margin: 12px 0; border-radius: 6px; }
+      a { color: #0066CC; text-decoration: none; }
+      a:hover { text-decoration: underline; text-underline-offset: 4px; }
+      img { max-width: 100%; height: auto; display: block; margin: 16px 0; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
       table, th, td { border-collapse: collapse; }
-      td { padding: 4px; }
-      h1, h2, h3 { color: #0F0F0E; font-weight: 600; }
-      blockquote { border-left: 2px solid #E8E6E1; margin: 16px 0; padding-left: 16px; color: #706E6B; }
-      hr { border: none; border-top: 1px solid #E8E6E1; margin: 20px 0; }
-      pre, code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #F4F3EF; border-radius: 4px; padding: 2px 6px; }
-      pre { padding: 12px 16px; overflow-x: auto; }
+      td { padding: 8px; border: 1px solid rgba(0,0,0,0.05); }
+      h1, h2, h3, h4 { color: #000000; font-weight: 600; letter-spacing: -0.02em; margin-top: 1.5em; margin-bottom: 0.5em; }
+      blockquote { border-left: 3px solid rgba(0,0,0,0.1); margin: 20px 0; padding-left: 16px; color: rgba(29,29,31,0.6); }
+      hr { border: none; border-top: 1px solid rgba(0,0,0,0.06); margin: 24px 0; }
+      pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12.5px; background: rgba(0,0,0,0.04); border-radius: 6px; padding: 2px 6px; }
+      pre { padding: 16px; overflow-x: auto; border-radius: 12px; border: 1px solid rgba(0,0,0,0.04); }
+      ::selection { background: rgba(0,122,255,0.15); }
     </style></head><body>${html}</body></html>`);
     doc.close();
 
     const resizeObserver = new ResizeObserver(() => {
       if (doc.body) {
-        setHeight(Math.max(doc.body.scrollHeight + 4, 80));
+        setHeight(Math.max(doc.body.scrollHeight + 10, 100));
       }
     });
 
     const timer = setTimeout(() => {
       if (doc.body) {
         resizeObserver.observe(doc.body);
-        setHeight(Math.max(doc.body.scrollHeight + 4, 80));
+        setHeight(Math.max(doc.body.scrollHeight + 10, 100));
       }
-    }, 120);
+    }, 150);
 
     return () => {
       clearTimeout(timer);
@@ -97,11 +104,14 @@ const SafeMailIframe = React.memo(({ html }: { html: string }) => {
   }, [html]);
 
   return (
-    <iframe
+    <motion.iframe
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
       ref={iframeRef}
       title="Email content"
       className="w-full border-0 bg-transparent"
-      style={{ height: `${height}px` }}
+      style={{ height: `${height}px`, transition: 'height 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
       sandbox="allow-same-origin allow-popups"
     />
   );
@@ -142,7 +152,6 @@ function formatDate(raw: string): string {
   }
 }
 
-/** Gmail deep-link from threadId or message id */
 function getGmailUrl(data: EmailViewerData): string | null {
   const id = data.threadId || data.id;
   if (!id) return null;
@@ -157,19 +166,24 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
+  const lastValidData = useRef<EmailViewerData | null>(null);
+
   const data: EmailViewerData | null = useMemo(() => {
+    if (!dataString) return lastValidData.current;
+
     try {
-      let clean = dataString.trim();
-      if (clean.startsWith('```')) {
-        const lines = clean.split('\n');
-        if (lines[0].startsWith('```')) lines.shift();
-        if (lines[lines.length - 1].startsWith('```')) lines.pop();
-        clean = lines.join('\n');
-      }
-      return JSON.parse(clean);
+      let cleanString = dataString
+        .replace(/^```[a-zA-Z]*\n?/i, '')
+        .replace(/\n?```$/i, '')
+        .trim();
+
+      cleanString = cleanString.replace(/,\s*([\]}])/g, '$1');
+
+      const parsed = JSON.parse(cleanString);
+      lastValidData.current = parsed;
+      return parsed;
     } catch (e) {
-      console.error('Failed to parse email viewer data', e);
-      return null;
+      return lastValidData.current;
     }
   }, [dataString]);
 
@@ -183,100 +197,108 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
 
   if (!data) {
     return (
-      <div className="p-5 bg-white/60 border border-clay/40 rounded-2xl text-taupe text-sm font-mono">
-        Unable to render email content.
+      <div className="my-8 p-6 bg-black/[0.02] border border-black/[0.04] rounded-[24px] flex items-center justify-center gap-3 w-full max-w-sm mx-auto">
+        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
+          <div className="w-2 h-2 rounded-full bg-black/30" />
+        </motion.div>
+        <span className="text-[13px] font-medium tracking-tight text-black/40">Decrypting mail payload...</span>
       </div>
     );
   }
 
   const sender = parseSender(data.sender || '');
-  const hasAttachments = data.attachments && data.attachments.length > 0;
+  const hasAttachments = Array.isArray(data.attachments) && data.attachments.length > 0;
   const hasHtml = !!data.bodyHtml;
   const gmailUrl = getGmailUrl(data);
 
   return (
-    <div className="my-5 w-full bg-white border border-clay/40 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-
+    <motion.div 
+      initial={{ opacity: 0, y: 16 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={SPRING_TRANSITION}
+      className="my-8 w-full bg-white/70 backdrop-blur-3xl rounded-[32px] shadow-[0_24px_60px_rgba(0,0,0,0.06),0_0_1px_rgba(0,0,0,0.1)] border border-black/[0.04] overflow-hidden isolate font-sans selection:bg-[#007AFF]/15"
+    >
       {/* Header */}
-      <div className="px-6 pt-5 pb-4">
-        {/* Subject + Gmail link */}
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <h2 className="text-[15px] font-semibold text-ink tracking-tight leading-snug flex-1 min-w-0">
+      <div className="px-8 pt-7 pb-5 bg-white/40">
+        
+        {/* Subject + App Link */}
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <h2 className="text-[20px] font-semibold text-[#1D1D1F] tracking-tight leading-snug flex-1 min-w-0 antialiased">
             {data.subject || 'No Subject'}
           </h2>
           {gmailUrl && (
-            <a
+            <motion.a
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               href={gmailUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 flex items-center gap-1 text-[9px] font-mono text-taupe/50 hover:text-bronze tracking-widest uppercase transition-colors duration-200 mt-0.5"
+              className="shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-[#007AFF] bg-[#007AFF]/10 px-3 py-1.5 rounded-full tracking-wide transition-colors duration-200 mt-1"
             >
-              Open
-              <ExternalLink size={10} strokeWidth={2} />
-            </a>
+              Open Mail
+              <ExternalLink size={12} strokeWidth={2.5} />
+            </motion.a>
           )}
         </div>
 
-        {/* Sender row */}
+        {/* Sender Row */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-[#F0EDE8] flex items-center justify-center shrink-0">
-              <span className="text-[12px] font-semibold text-charcoal/70">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F5F5F7] to-[#E5E5EA] border border-black/[0.04] shadow-[inset_0_-1px_1px_rgba(0,0,0,0.04)] flex items-center justify-center shrink-0">
+              <span className="text-[15px] font-semibold text-[#1D1D1F]/70 tracking-tight">
                 {sender.name.charAt(0).toUpperCase()}
               </span>
             </div>
-            <div className="min-w-0">
-              <span className="text-[12.5px] font-medium text-charcoal block truncate">
+            <div className="min-w-0 flex flex-col justify-center">
+              <span className="text-[14.5px] font-semibold text-[#1D1D1F] tracking-tight block truncate">
                 {sender.name}
               </span>
-              <span className="text-[10.5px] text-taupe/60 font-mono truncate block">
+              <span className="text-[12px] text-black/40 font-medium truncate mt-0.5">
                 {sender.email}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[10.5px] text-taupe/50 font-mono hidden sm:block">
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="text-[12px] text-black/40 font-medium hidden sm:block tracking-wide">
               {formatDate(data.date || '')}
             </span>
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="p-1 rounded-md text-taupe/30 hover:text-charcoal/60 hover:bg-sand/60 transition-all duration-200"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-black/30 hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-300 active:scale-90"
               aria-label={showDetails ? 'Hide details' : 'Show details'}
             >
-              <ChevronDown
-                size={13}
-                strokeWidth={2}
-                className={`transition-transform duration-200 ${showDetails ? 'rotate-180' : ''}`}
-              />
+              <motion.div animate={{ rotate: showDetails ? 180 : 0 }} transition={MICRO_SPRING}>
+                <ChevronDown size={16} strokeWidth={2.5} />
+              </motion.div>
             </button>
           </div>
         </div>
 
-        {/* Expandable details */}
-        <AnimatePresence>
+        {/* Expandable Routing Details */}
+        <AnimatePresence initial={false}>
           {showDetails && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              transition={SPRING_TRANSITION}
               className="overflow-hidden"
             >
-              <div className="mt-3 pt-3 border-t border-clay/25 space-y-2 text-[11px] font-mono">
-                <div className="flex gap-2">
-                  <span className="text-taupe/40 shrink-0 w-6">To</span>
-                  <span className="text-charcoal/70 break-all">{data.to || '—'}</span>
+              <div className="mt-5 p-4 bg-[#F5F5F7]/80 rounded-[16px] space-y-2.5 text-[12.5px] font-medium tracking-tight border border-black/[0.03]">
+                <div className="flex gap-4">
+                  <span className="text-black/30 shrink-0 w-8 text-right">To</span>
+                  <span className="text-[#1D1D1F]/80 break-all">{data.to || '—'}</span>
                 </div>
                 {data.cc && (
-                  <div className="flex gap-2">
-                    <span className="text-taupe/40 shrink-0 w-6">Cc</span>
-                    <span className="text-charcoal/70 break-all">{data.cc}</span>
+                  <div className="flex gap-4">
+                    <span className="text-black/30 shrink-0 w-8 text-right">Cc</span>
+                    <span className="text-[#1D1D1F]/80 break-all">{data.cc}</span>
                   </div>
                 )}
-                <div className="sm:hidden flex gap-2">
-                  <span className="text-taupe/40 shrink-0 w-6">At</span>
-                  <span className="text-charcoal/70">{formatDate(data.date || '')}</span>
+                <div className="sm:hidden flex gap-4">
+                  <span className="text-black/30 shrink-0 w-8 text-right">At</span>
+                  <span className="text-[#1D1D1F]/80">{formatDate(data.date || '')}</span>
                 </div>
               </div>
             </motion.div>
@@ -285,15 +307,15 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
       </div>
 
       {/* Divider */}
-      <div className="mx-6 h-px bg-clay/25" />
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-black/[0.06] to-transparent" />
 
       {/* Body */}
-      <div className="relative">
+      <div className="relative w-full bg-white/50 backdrop-blur-md min-h-[100px]">
         {hasHtml ? (
           <SafeMailIframe html={data.bodyHtml!} />
         ) : (
-          <div className="px-6 py-5">
-            <pre className="text-[13px] text-charcoal/85 leading-7 whitespace-pre-wrap font-sans m-0">
+          <div className="px-8 py-8">
+            <pre className="text-[14.5px] text-[#1D1D1F]/80 leading-[1.65] tracking-[-0.01em] whitespace-pre-wrap font-sans m-0 antialiased">
               {data.bodyText || 'No content available.'}
             </pre>
           </div>
@@ -302,22 +324,22 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
 
       {/* Attachments */}
       {hasAttachments && (
-        <div className="mx-6 border-t border-clay/25">
-          <div className="py-3.5">
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <Paperclip size={11} className="text-taupe/40" strokeWidth={2} />
-              <span className="text-[9px] font-mono text-taupe/40 uppercase tracking-widest">
-                {data.attachments!.length} attachment{data.attachments!.length > 1 ? 's' : ''}
+        <div className="border-t border-black/[0.04] bg-[#F9F9F9]/50">
+          <div className="px-8 py-5">
+            <div className="flex items-center gap-2 mb-3.5 px-1">
+              <Paperclip size={13} className="text-black/30" strokeWidth={2.5} />
+              <span className="text-[10px] font-semibold text-black/30 uppercase tracking-[0.18em]">
+                {data.attachments!.length} Attachment{data.attachments!.length > 1 ? 's' : ''}
               </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2.5">
               {data.attachments!.map((att, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-[#F8F7F5] border border-clay/30 rounded-lg text-[10.5px] font-mono text-charcoal/70 hover:border-bronze/30 transition-colors duration-200"
+                  className="group flex items-center gap-3 px-3.5 py-2.5 bg-white border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.02)] rounded-[12px] hover:border-black/[0.08] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] transition-all duration-300 cursor-default"
                 >
-                  <span className="truncate max-w-[180px]">{att.filename}</span>
-                  <span className="text-taupe/40 shrink-0">{formatSize(att.size)}</span>
+                  <span className="text-[12.5px] font-medium text-[#1D1D1F]/80 truncate max-w-[200px] tracking-tight">{att.filename}</span>
+                  <span className="text-[11px] font-medium text-black/30 shrink-0 uppercase tracking-wider">{formatSize(att.size)}</span>
                 </div>
               ))}
             </div>
@@ -325,40 +347,41 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
         </div>
       )}
 
-      {/* Footer */}
-      <div className="px-6 py-2.5 border-t border-clay/20 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
+      {/* Footer Utility Actions */}
+      <div className="px-8 py-4 bg-black/[0.01] border-t border-black/[0.04] flex items-center justify-between">
+        <div className="flex items-center gap-2">
           {data.labelIds?.includes('IMPORTANT') && (
-            <span className="text-[8px] font-mono text-bronze/60 uppercase tracking-[0.12em] bg-bronze/5 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-semibold text-[#FF3B30] uppercase tracking-[0.15em] bg-[#FF3B30]/10 px-2.5 py-1 rounded-full">
               Important
             </span>
           )}
           {data.labelIds?.includes('STARRED') && (
-            <span className="text-[8px] font-mono text-amber-600/50 uppercase tracking-[0.12em] bg-amber-50 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-semibold text-[#FF9500] uppercase tracking-[0.15em] bg-[#FF9500]/10 px-2.5 py-1 rounded-full">
               Starred
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        
+        <div className="flex items-center gap-2.5">
           {onReply && data.id && (
-            <button
-              onClick={() => {
-                onReply(`Reply to this email`);
-              }}
-              className="text-[9px] font-mono text-taupe/35 hover:text-bronze/70 transition-colors duration-200 active:scale-95"
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onReply(`Reply to this email`)}
+              className="px-4 py-1.5 rounded-full bg-white border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[12px] font-semibold text-[#1D1D1F]/70 tracking-tight hover:text-[#1D1D1F] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 active:scale-95"
             >
-              reply
-            </button>
+              Reply
+            </motion.button>
           )}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={handleCopy}
-            className="flex items-center gap-1 text-[9px] font-mono text-taupe/35 hover:text-charcoal/60 transition-colors duration-200 active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[12px] font-semibold text-[#1D1D1F]/70 tracking-tight hover:text-[#1D1D1F] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 active:scale-95 w-[84px] justify-center"
           >
-            {copied ? <Check size={10} className="text-bronze/70" /> : <Copy size={10} />}
-            {copied ? 'copied' : 'copy'}
-          </button>
+            {copied ? <Check size={12} className="text-[#34C759] shrink-0" strokeWidth={2.5} /> : <Copy size={12} className="shrink-0" strokeWidth={2} />}
+            {copied ? 'Copied' : 'Copy'}
+          </motion.button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

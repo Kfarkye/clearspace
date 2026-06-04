@@ -19,6 +19,7 @@ import { HtmlArtifact } from './HtmlArtifact';
 import { ScoreboardArtifact } from './ScoreboardArtifact';
 import { DataTableArtifact } from './DataTableArtifact';
 import { MatchupResearchArtifact } from './MatchupResearchArtifact';
+import { EmailViewerArtifact } from './EmailViewerArtifact';
 
 interface AuraChatProps {
   messages: Message[];
@@ -42,6 +43,7 @@ const ARTIFACT_REGISTRY = [
   { id: 'scoreboard', match: (l: string, c: string) => l.includes('scoreboard') || (c.includes('"games"') && c.includes('"summary_markdown"')), component: ScoreboardArtifact },
   { id: 'matchupresearch', match: (l: string, c: string) => l.includes('matchupresearch') || (c.includes('"headToHead"') && c.includes('"homeTeam"') && c.includes('"awayTeam"')) || (c.includes('"head_to_head"') && c.includes('"home_team"') && c.includes('"away_team"')), component: MatchupResearchArtifact },
   { id: 'bettingangles', match: (l: string, c: string) => l.includes('bettingangles') || (c.includes('"analysis_markdown"') && c.includes('"angles"')), component: BettingAnglesArtifact },
+  { id: 'emailviewer', match: (l: string, c: string) => l.includes('emailviewer') || (c.includes('"sender"') && (c.includes('"bodyHtml"') || c.includes('"bodyText"'))), component: EmailViewerArtifact },
   { id: 'workspace', match: (l: string, c: string) => l.includes('workspace') || (c.includes('"emails"') && c.includes('"schedule"')), component: WorkspaceArtifact },
   { id: 'travelhealth', match: (l: string, c: string) => l.includes('travelhealth') || c.includes('"job_matches"'), component: TravelHealthArtifact },
   { id: 'sidebar', match: (l: string, c: string) => l.includes('sidebar') || c.includes('"action_prompt"'), component: SidebarArtifact },
