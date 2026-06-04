@@ -203,7 +203,7 @@ export function useChat(workspaceToken: string | null) {
 
       chatRef.current = ai.chats.create({
         model: MODEL_ID,
-        history,
+        history: history || [],
         config: {
           systemInstruction,
           thinkingConfig: { thinkingBudget: THINKING_BUDGETS[thinkingMode] },
