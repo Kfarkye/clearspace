@@ -454,11 +454,19 @@ export async function fetchMoneylineRecord(ai, teamName) {
  * @param {Object} enrichedDataPayload - Pre-enriched game data with ATS/O-U/odds
  */
 export async function generateBettingAngles(ai, enrichedDataPayload) {
+  const team = enrichedDataPayload?.team;
+  const isTeamScoped = team && team.toLowerCase() !== 'all';
+
+  // CRITICAL SCOPE MANDATE: Prevent agent from returning angles for unrelated games
+  const scopeDirective = isTeamScoped
+    ? `The user has requested betting angles explicitly for: ${team}. You MUST ONLY return betting angles and analysis involving the ${team}. If you return a bet for a completely unrelated game, you have FAILED your mandate.`
+    : `Analyze the full board and find the best value across the entire league.`;
+
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: `Analyze this verified sports payload and generate angles: ${JSON.stringify(enrichedDataPayload)}`,
     config: {
-      systemInstruction: "You are Aura. Generate betting angles based strictly on the provided structured payload. Do not invent odds. If ATS or Over/Under is not available or grade is NEUTRAL, pivot your analysis strictly to starting pitching mismatches and recommend F5 (First 5 innings) ML.",
+      systemInstruction: `You are Aura, a professional sports betting sharp.\n\nCRITICAL SCOPE MANDATE:\n${scopeDirective}\n\nGenerate betting angles based strictly on the provided structured payload. Do not invent odds. If ATS or Over/Under is not available or grade is NEUTRAL, pivot your analysis strictly to starting pitching mismatches and recommend F5 (First 5 innings) ML.`,
       responseMimeType: 'application/json',
       responseSchema: BETTING_ANGLES_SCHEMA,
       temperature: 0.2
