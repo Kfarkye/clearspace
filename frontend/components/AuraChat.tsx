@@ -18,6 +18,7 @@ import { CodeSandboxArtifact } from './CodeSandboxArtifact';
 import { HtmlArtifact } from './HtmlArtifact';
 import { ScoreboardArtifact } from './ScoreboardArtifact';
 import { DataTableArtifact } from './DataTableArtifact';
+import { LicensingArtifact } from './LicensingArtifact';
 import { MatchupResearchArtifact } from './MatchupResearchArtifact';
 import { EmailViewerArtifact } from './EmailViewerArtifact';
 
@@ -49,6 +50,7 @@ const ARTIFACT_REGISTRY = [
   { id: 'sidebar', match: (l: string, c: string) => l.includes('sidebar') || c.includes('"action_prompt"'), component: SidebarArtifact },
   { id: 'codesandbox', match: (l: string, c: string) => l.includes('codesandbox') || c.includes('"explanation_markdown"'), component: CodeSandboxArtifact },
   { id: 'datatable', match: (l: string, c: string) => l.includes('datatable') || (c.includes('"columns"') && c.includes('"rows"')), component: DataTableArtifact },
+  { id: 'licensing', match: (l: string, c: string) => l.includes('licensing') || (c.includes('"profession"') && c.includes('"requirements"') && c.includes('"state"')), component: LicensingArtifact },
   { id: 'html', match: (l: string, c: string) => l === 'html' && c.trim().startsWith('<'), component: HtmlArtifact as any }
 ];
 
