@@ -1,6 +1,7 @@
 
 import { ESPN_SPORT_MAP as SHARED_ESPN_SPORT_MAP, resolveRef as sharedResolveRef, fetchCoreApiOdds } from '@clearspace/sports-core';
 import { createSessionManager, createSessionMiddleware, createAuthRoutes } from '@clearspace/auth';
+import { SubstrateErrorCode, structuredError, Severity } from './lib/errors.js';
 import * as spannerDAL from './spanner.js';
 import cookieParser from 'cookie-parser';
 import { classify, getDispatch, MODES } from './lib/router.js';
@@ -431,6 +432,46 @@ function getRequestHeaders(accessToken) {
 // NOTE: /api-proxy/workspace-token endpoint REMOVED for security.
 // The GCP service account token must never be exposed to the browser.
 // The Vertex AI proxy handles auth server-side via getAccessToken().
+
+// ============================================================================
+// Health Probes — Cloud Run Container Lifecycle
+// Unauthenticated, fast-path. Required for managed container orchestration.
+// ============================================================================
+
+/** Liveness: confirms the process is running and not deadlocked */
+app.get('/health/liveness', (req, res) => {
+  res.status(200).json({ status: 'alive', system: 'TRUTH_CLEARSPACE_V1' });
+});
+
+/**
+ * Readiness: deep probe — verifies Spanner session pool is viable.
+ * Cloud Run uses this to determine if the container can serve traffic.
+ * If Spanner is down, the container is pulled from the load balancer.
+ */
+app.get('/health/readiness', async (req, res) => {
+  try {
+    // Deep ping: execute a trivial query to validate the session pool
+    const db = spannerDAL._getDatabase ? spannerDAL._getDatabase() : null;
+    if (!db) {
+      structuredError(SubstrateErrorCode.ACID_SYNC_FAULT, 'Spanner database handle not initialized', {}, Severity.CRITICAL);
+      return res.status(503).json({ status: 'not_ready', reason: 'database_offline' });
+    }
+
+    const [rows] = await db.run({ sql: 'SELECT 1 AS probe' });
+    if (!rows || rows.length === 0) {
+      throw new Error('Spanner probe returned empty result');
+    }
+
+    res.status(200).json({
+      status: 'ready',
+      spanner: 'connected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    structuredError(SubstrateErrorCode.ACID_SYNC_FAULT, `Readiness probe failed: ${err.message}`, { stack: err.stack }, Severity.CRITICAL);
+    res.status(503).json({ status: 'not_ready', reason: 'database_unreachable' });
+  }
+});
 
 // --- ESPN Sports Data Proxy (Site API + Core API) ---
 // Using shared sport map and ref resolver from @clearspace/sports-core

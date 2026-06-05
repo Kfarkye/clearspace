@@ -41,3 +41,10 @@ export {
     recomputeBestBook,
     auditLog as governanceAuditLog,
 } from './sports-governance.js';
+
+export {
+    createSourceReceipt,
+    validateCanonicalObject,
+    canonicalizeEspnEvent,
+    EntityPrefix,
+} from './schemas.js';

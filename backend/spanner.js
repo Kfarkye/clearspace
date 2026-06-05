@@ -49,6 +49,9 @@ function getDatabase() {
   return database;
 }
 
+/** Exposed for health probes — returns the raw database handle */
+export { getDatabase as _getDatabase };
+
 /** Generates a UUID v4 for primary keys. */
 function uuid() {
   return crypto.randomUUID();
