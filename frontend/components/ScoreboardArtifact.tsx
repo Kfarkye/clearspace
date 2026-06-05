@@ -187,8 +187,7 @@ const GameDisplay = memo(({ game, isHero, onClick }: { game: Game; isHero?: bool
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {status === 'live' ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[6px] bg-black/[0.04] border border-black/[0.06]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1D1D1F]/50 animate-pulse" />
+            <div className="flex items-center px-2 py-0.5 rounded-[6px] bg-black/[0.04] border border-black/[0.06]">
               <span className="text-[10px] font-bold tracking-[0.1em] text-[#1D1D1F]/70 uppercase">
                 {game.period || 'Live'}
               </span>
