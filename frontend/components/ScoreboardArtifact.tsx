@@ -187,9 +187,9 @@ const GameDisplay = memo(({ game, isHero, onClick }: { game: Game; isHero?: bool
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {status === 'live' ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[6px] bg-[#FF3B30]/10 border border-[#FF3B30]/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF3B30] animate-pulse shadow-[0_0_8px_rgba(255,59,48,0.6)]" />
-              <span className="text-[10px] font-bold tracking-[0.1em] text-[#FF3B30] uppercase">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-[6px] bg-black/[0.04] border border-black/[0.06]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D1D1F]/50 animate-pulse" />
+              <span className="text-[10px] font-bold tracking-[0.1em] text-[#1D1D1F]/70 uppercase">
                 {game.period || 'Live'}
               </span>
             </div>
@@ -413,7 +413,7 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-black/[0.02] flex items-center justify-center">
             {liveGames.length > 0 ? (
-              <Activity size={18} className="text-[#FF3B30]" strokeWidth={2} />
+              <Activity size={18} className="text-[#1D1D1F]" strokeWidth={2} />
             ) : (
               <Trophy size={18} className="text-[#1D1D1F]" strokeWidth={1.5} />
             )}
