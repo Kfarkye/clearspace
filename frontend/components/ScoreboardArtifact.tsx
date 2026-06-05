@@ -10,6 +10,7 @@ import { Activity, Tv, Trophy, TrendingUp, User, LineChart, PlayCircle, Zap } fr
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LiveRiskActionDock } from './LiveRiskActionDock';
 
 // ─── Interfaces & Config ──────────────────────────────────────────────────
 
@@ -329,13 +330,17 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
         </div>
       )}
 
-      {/* Deep Dive Action Dock */}
+      {/* Action Dock — live games get position evaluator, others get standard pills */}
       {isHero && onAction && (
-        <div className="mt-5 pt-4 border-t border-black/[0.04] flex gap-2 overflow-x-auto no-scrollbar mask-fade-right pb-1">
-          <ActionPill icon={LineChart} label="Matchup Analysis" onClick={() => onAction(`Analyze the matchup between ${matchupName}.`)} />
-          <ActionPill icon={TrendingUp} label="Live Betting Angles" onClick={() => onAction(`Get live betting trends, odds, and angles for the ${matchupName} game.`)} />
-          <ActionPill icon={User} label="Player Props" onClick={() => onAction(`Find the best player props for ${matchupName}.`)} />
-        </div>
+        status === 'live' ? (
+          <LiveRiskActionDock game={game} matchupName={matchupName} onAction={onAction} />
+        ) : (
+          <div className="mt-5 pt-4 border-t border-black/[0.04] flex gap-2 overflow-x-auto no-scrollbar mask-fade-right pb-1">
+            <ActionPill icon={LineChart} label="Matchup Analysis" onClick={() => onAction(`Analyze the matchup between ${matchupName}.`)} />
+            <ActionPill icon={TrendingUp} label="Live Betting Angles" onClick={() => onAction(`Get live betting trends, odds, and angles for the ${matchupName} game.`)} />
+            <ActionPill icon={User} label="Player Props" onClick={() => onAction(`Find the best player props for ${matchupName}.`)} />
+          </div>
+        )
       )}
     </motion.div>
   );
@@ -493,11 +498,20 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
       }
     };
 
-    fetchLiveUpdates();
-    const interval = setInterval(fetchLiveUpdates, 15000);
+    // Recursive setTimeout prevents overlapping fetches if a request is slow
+    const poll = async () => {
+      if (cancelled) return;
+      await fetchLiveUpdates();
+      if (!cancelled) {
+        timeoutId = setTimeout(poll, 10_000); // 10s tick for live play-by-play
+      }
+    };
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    poll();
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      clearTimeout(timeoutId);
     };
   }, [activeGameIds, initialData?.league, initialData?.games]);
 
