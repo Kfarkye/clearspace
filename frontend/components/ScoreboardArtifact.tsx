@@ -1,55 +1,35 @@
 // ============================================================================
-// ScoreboardArtifact — Premium Live Sports Tracker
+// ScoreboardArtifact — Premium Living Sports Tracker
 //
-// Design: Apple Sports / visionOS aesthetic. Authentic materiality.
-// Features: ESPN CDN Logo & Player integration, Zero-crash SWR streaming cache, 
-//           Critically damped micro-spring physics, Tabular data alignment.
+// Features: Autonomous ESPN Edge Polling, MLB.TV Deep Linking, Conversational
+//           Action Chips, Kinetic Score Physics, visionOS Material Design.
 // ============================================================================
 
-import React, { useMemo, useRef, useState, memo } from 'react';
-import { Activity, ChevronRight, Tv, Trophy } from 'lucide-react';
+import React, { useMemo, useRef, useState, useEffect, memo } from 'react';
+import { Activity, Tv, Trophy, TrendingUp, User, LineChart, PlayCircle } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// ─── Interfaces & Physics ──────────────────────────────────────────────────
+// ─── Interfaces & Config ──────────────────────────────────────────────────
 
-interface Team {
-  name: string;
-  abbr: string;
-  logo?: string;
-  score?: number | string;
-  record?: string;
-  odds?: string;
-}
-
-interface TopPerformer {
-  name: string;
-  playerId?: string;
-  headshotUrl?: string;
-  statLine: string;
-}
-
+interface Team { name: string; abbr: string; logo?: string; score?: number | string; record?: string; odds?: string; }
 interface Game {
-  id?: string;
-  status: string;
-  period?: string;
-  date?: string;
-  broadcast?: string;
-  note?: string;
-  away_team: Team;
-  home_team: Team;
-  top_performers?: TopPerformer[];
-  league?: string;
+  id: string; status: string; period?: string; date?: string; broadcast?: string; note?: string;
+  away_team: Team; home_team: Team; league?: string;
 }
 
-interface ScoreboardData {
-  summary_markdown?: string;
-  games?: Game[];
-}
+interface ScoreboardData { summary_markdown?: string; games: Game[]; league?: string; }
 
 // Apple-esque Spring Physics
 const SPRING_TRANSITION = { type: 'spring', bounce: 0, duration: 0.5, mass: 0.8, damping: 18 };
+
+const ESPN_SPORT_MAP: Record<string, string> = {
+  mlb: 'baseball/mlb', nba: 'basketball/nba', nfl: 'football/nfl',
+  nhl: 'hockey/nhl', wnba: 'basketball/wnba',
+  cfb: 'football/college-football', ncaaf: 'football/college-football',
+  cbb: 'basketball/mens-college-basketball', ncaam: 'basketball/mens-college-basketball'
+};
 
 const LEAGUE_TEAM_MAP: Record<string, Record<string, string>> = {
   mlb: { 'yankees': 'nyy', 'mets': 'nym', 'red sox': 'bos', 'orioles': 'bal', 'blue jays': 'tor', 'rays': 'tb', 'guardians': 'cle', 'twins': 'min', 'white sox': 'chw', 'tigers': 'det', 'royals': 'kc', 'astros': 'hou', 'rangers': 'tex', 'mariners': 'sea', 'athletics': 'oak', 'angels': 'laa', 'dodgers': 'lad', 'padres': 'sd', 'giants': 'sf', 'diamondbacks': 'ari', 'rockies': 'col', 'braves': 'atl', 'phillies': 'phi', 'marlins': 'mia', 'nationals': 'wsh', 'cubs': 'chc', 'cardinals': 'stl', 'brewers': 'mil', 'reds': 'cin', 'pirates': 'pit' },
@@ -58,7 +38,7 @@ const LEAGUE_TEAM_MAP: Record<string, Record<string, string>> = {
   nfl: { 'chiefs': 'kc', 'eagles': 'phi', 'bills': 'buf', 'ravens': 'bal', '49ers': 'sf', 'lions': 'det', 'cowboys': 'dal', 'dolphins': 'mia', 'steelers': 'pit', 'bengals': 'cin', 'packers': 'gb', 'chargers': 'lac', 'vikings': 'min', 'bears': 'chi', 'texans': 'hou', 'commanders': 'wsh', 'jaguars': 'jax', 'broncos': 'den', 'colts': 'ind', 'titans': 'ten', 'raiders': 'lv', 'saints': 'no', 'falcons': 'atl', 'seahawks': 'sea', 'buccaneers': 'tb', 'rams': 'lar', 'panthers': 'car', 'giants': 'nyg', 'jets': 'nyj' }
 };
 
-// ─── Utilities & Resolvers ─────────────────────────────────────────────────
+// ─── Telemetry & Deep Links ────────────────────────────────────────────────
 
 const normalizeStatus = (raw?: string): 'live' | 'final' | 'scheduled' => {
   const s = (raw || '').toLowerCase();
@@ -67,48 +47,53 @@ const normalizeStatus = (raw?: string): 'live' | 'final' | 'scheduled' => {
   return 'scheduled';
 };
 
-/** Guesses the league for ESPN CDN routing if the payload omits it */
-const guessLeague = (abbr: string): string => {
-  const a = (abbr || '').toLowerCase();
-  for (const [league, teams] of Object.entries(LEAGUE_TEAM_MAP)) {
-    if (Object.values(teams).includes(a)) return league;
-  }
-  return 'nfl'; // fallback
+/** Resolves deep links to streaming apps based on the broadcast network */
+const resolveWatchLink = (league?: string, broadcast?: string): { label: string; url: string; style: string } | null => {
+  const b = (broadcast || '').toUpperCase();
+  const l = (league || '').toLowerCase();
+
+  if (l === 'mlb' || b.includes('MLB.TV')) return { label: 'MLB.TV', url: 'https://www.mlb.com/tv', style: 'text-[#007AFF] bg-[#007AFF]/10 hover:bg-[#007AFF]/20' };
+  if (b.includes('APPLE') || b.includes('ATV')) return { label: 'Apple TV+', url: 'https://tv.apple.com', style: 'text-[#1D1D1F] bg-black/5 hover:bg-black/10' };
+  if (b.includes('ESPN') || b.includes('ABC')) return { label: 'WatchESPN', url: 'https://www.espn.com/watch/', style: 'text-[#1D1D1F] bg-black/5 hover:bg-black/10' };
+  if (b.includes('PEACOCK')) return { label: 'Peacock', url: 'https://www.peacocktv.com', style: 'text-[#1D1D1F] bg-black/5 hover:bg-black/10' };
+  if (b.includes('PRIME') || b.includes('AMAZON')) return { label: 'Prime Video', url: 'https://www.amazon.com/primevideo', style: 'text-[#1D1D1F] bg-black/5 hover:bg-black/10' };
+
+  return null;
 };
 
-/** ESPN CDN Logo Resolver (Intelligent Fallback Mapping) */
-const resolveEspnLogoUrl = (teamName?: string, abbr?: string, explicitLogo?: string): string | undefined => {
-  if (explicitLogo) return explicitLogo;
+/** ESPN CDN Logo Resolver — uses league + abbr for direct path, falls back to name lookup */
+const resolveEspnLogoUrl = (league?: string, abbr?: string, teamName?: string, explicitUrl?: string): string | undefined => {
+  if (explicitUrl) return explicitUrl;
+
+  // Direct path if we have league + abbr
+  if (league && abbr) {
+    const l = league.toLowerCase();
+    const sportPath = l === 'cfb' || l === 'ncaaf' ? 'college-football' : l === 'cbb' || l === 'ncaam' ? 'mens-college-basketball' : l;
+    return `https://a.espncdn.com/i/teamlogos/${sportPath}/500/scoreboard/${abbr.toLowerCase()}.png`;
+  }
+
+  // Fallback: resolve via team name lookup
   if (!teamName && !abbr) return undefined;
-  
   const lowerName = (teamName || '').toLowerCase();
-  for (const [league, teams] of Object.entries(LEAGUE_TEAM_MAP)) {
+  for (const [lg, teams] of Object.entries(LEAGUE_TEAM_MAP)) {
     for (const [name, defaultAbbr] of Object.entries(teams)) {
       if (lowerName && new RegExp(`\\b${name}\\b`, 'i').test(lowerName)) {
-        return `https://a.espncdn.com/i/teamlogos/${league}/500/scoreboard/${abbr?.toLowerCase() || defaultAbbr}.png`;
+        return `https://a.espncdn.com/i/teamlogos/${lg}/500/scoreboard/${abbr?.toLowerCase() || defaultAbbr}.png`;
       }
     }
   }
   return undefined;
 };
 
-/** ESPN Player Headshot Resolver */
-const resolveEspnHeadshotUrl = (playerId?: string, explicitUrl?: string, league: string = 'nfl'): string | undefined => {
-  if (explicitUrl) return explicitUrl;
-  if (!playerId) return undefined;
-  return `https://a.espncdn.com/i/headshots/${league.toLowerCase()}/players/full/${playerId}.png`;
-};
-
 // ─── Sub-Components ────────────────────────────────────────────────────────
 
-/** Isolated Logo component to prevent full-row re-renders on image error */
-const TeamLogo = memo(({ abbr, name, logoUrl, size = 32 }: { abbr: string; name: string; logoUrl?: string; size?: number }) => {
+const TeamLogo = memo(({ abbr, name, logoUrl, league, size = 32 }: { abbr: string; name: string; logoUrl?: string; league?: string; size?: number }) => {
   const [error, setError] = useState(false);
-  const src = resolveEspnLogoUrl(name, abbr, logoUrl);
+  const src = resolveEspnLogoUrl(league, abbr, name, logoUrl);
 
   if (!src || error || abbr === 'TBD') {
     return (
-      <div 
+      <div
         style={{ width: size, height: size }}
         className="rounded-full bg-gradient-to-br from-[#F5F5F7] to-[#E5E5EA] border border-black/[0.04] shadow-[inset_0_-1px_1px_rgba(0,0,0,0.04)] flex items-center justify-center shrink-0"
       >
@@ -121,76 +106,67 @@ const TeamLogo = memo(({ abbr, name, logoUrl, size = 32 }: { abbr: string; name:
 
   return (
     <div style={{ width: size, height: size }} className="relative shrink-0 flex items-center justify-center bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-black/[0.04] p-1 overflow-hidden">
-      <img
-        src={src}
-        alt={name}
-        onError={() => setError(true)}
-        className="max-w-full max-h-full object-contain"
-        loading="lazy"
-      />
+      <img src={src} alt={name} onError={() => setError(true)} className="max-w-full max-h-full object-contain" loading="lazy" />
     </div>
   );
 });
 TeamLogo.displayName = 'TeamLogo';
 
-/** High-Resolution Player Avatar */
-const PlayerHeadshot = memo(({ name, playerId, headshotUrl, league, size = 32 }: { name: string; playerId?: string; headshotUrl?: string; league?: string; size?: number }) => {
-  const [error, setError] = useState(false);
-  const src = resolveEspnHeadshotUrl(playerId, headshotUrl, league);
+/** Kinetic Flip-Clock Animation for Scores */
+const AnimatedScore = ({ score }: { score?: string | number }) => (
+  <div className="relative inline-flex justify-end overflow-hidden" style={{ minWidth: '1.2em', height: '1.2em' }}>
+    <AnimatePresence mode="popLayout">
+      <motion.span
+        key={String(score)}
+        initial={{ y: -15, opacity: 0, filter: "blur(4px)" }}
+        animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+        exit={{ y: 15, opacity: 0, filter: "blur(4px)" }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="inline-block"
+      >
+        {score ?? '—'}
+      </motion.span>
+    </AnimatePresence>
+  </div>
+);
 
-  if (!src || error) {
-    return (
-      <div style={{ width: size, height: size }} className="rounded-full bg-black/5 border border-black/[0.04] flex items-center justify-center shrink-0">
-        <span className="font-semibold text-black/40 tracking-tight" style={{ fontSize: size * 0.35 }}>
-          {name.charAt(0)}
-        </span>
-      </div>
-    );
-  }
+/** Action Pill for Contextual Drill-Downs */
+const ActionPill = ({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) => (
+  <motion.button
+    whileHover={{ backgroundColor: "rgba(0,0,0,0.04)" }}
+    whileTap={{ scale: 0.95 }}
+    onClick={onClick}
+    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-black/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.02)] shrink-0 transition-colors"
+  >
+    <Icon size={12} className="text-[#1D1D1F]/60" strokeWidth={2.5} />
+    <span className="text-[11.5px] font-semibold tracking-tight text-[#1D1D1F]/80">{label}</span>
+  </motion.button>
+);
 
-  return (
-    <div style={{ width: size, height: size }} className="rounded-full bg-[#F5F5F7] border border-black/[0.04] overflow-hidden shrink-0 flex items-end justify-center">
-      <img src={src} alt={name} onError={() => setError(true)} className="w-[90%] h-[90%] object-cover object-bottom drop-shadow-sm" loading="lazy" />
-    </div>
-  );
-});
-PlayerHeadshot.displayName = 'PlayerHeadshot';
-
-/** 
- * Apple Sports style stacked row layout. 
- * Used for both Live Cards and Compact Rows to maintain strict visual consistency.
- */
-const GameDisplay = memo(({ game, isHero, onClick }: { game: Game; isHero?: boolean; onClick?: () => void }) => {
+/** Apple Sports stacked game row — Hero (live) or Compact (scheduled/final) */
+const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boolean; onAction?: (q: string) => void }) => {
   const status = normalizeStatus(game.status);
   const isScheduled = status === 'scheduled';
-  const awayScore = game.away_team?.score;
-  const homeScore = game.home_team?.score;
-  const awayWins = !isScheduled && awayScore !== undefined && Number(awayScore) > Number(homeScore ?? 0);
-  const homeWins = !isScheduled && homeScore !== undefined && Number(homeScore) > Number(awayScore ?? 0);
-
-  const isClickable = !!onClick;
+  const awayWins = !isScheduled && Number(game.away_team?.score) > Number(game.home_team?.score ?? 0);
+  const homeWins = !isScheduled && Number(game.home_team?.score) > Number(game.away_team?.score ?? 0);
+  const watchLink = resolveWatchLink(game.league, game.broadcast);
+  const matchupName = `${game.away_team.name || game.away_team.abbr} vs ${game.home_team.name || game.home_team.abbr}`;
 
   return (
     <motion.div
-      whileHover={isClickable ? { scale: 0.99, backgroundColor: isHero ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.02)" } : {}}
-      whileTap={isClickable ? { scale: 0.97 } : {}}
-      onClick={onClick}
-      className={`relative flex flex-col w-full transition-all duration-300 ${isClickable ? 'cursor-pointer' : 'cursor-default'} ${
-        isHero 
-          ? 'bg-white/80 backdrop-blur-xl border border-black/[0.04] rounded-[24px] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]' 
-          : 'bg-transparent py-4 border-b border-black/[0.04] last:border-0'
+      layout="position"
+      transition={SPRING_TRANSITION}
+      className={`relative flex flex-col w-full transition-all duration-300 ${isHero
+        ? 'bg-white/80 backdrop-blur-xl border border-black/[0.06] rounded-[24px] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]'
+        : 'bg-transparent py-4 border-b border-black/[0.04] last:border-0'
       }`}
-      role={isClickable ? 'button' : undefined}
-      tabIndex={isClickable ? 0 : undefined}
     >
       {/* Meta Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           {status === 'live' ? (
-            <div className="flex items-center px-2 py-0.5 rounded-[6px] bg-black/[0.04] border border-black/[0.06]">
-              <span className="text-[10px] font-bold tracking-[0.1em] text-[#1D1D1F]/70 uppercase">
-                {game.period || 'Live'}
-              </span>
+            <div className="flex items-center px-2.5 py-0.5 rounded-[6px] bg-black/[0.04] border border-black/[0.06]">
+              <span className="text-[10px] font-bold tracking-[0.1em] text-[#1D1D1F]/70 uppercase">{game.period || 'Live'}</span>
             </div>
           ) : (
             <span className="text-[11px] font-semibold tracking-wide text-black/40 uppercase">
@@ -198,93 +174,69 @@ const GameDisplay = memo(({ game, isHero, onClick }: { game: Game; isHero?: bool
             </span>
           )}
         </div>
-        
-        {game.broadcast && (
+
+        {/* Watch Live Deep-Link or Broadcast Label */}
+        {watchLink && status !== 'final' ? (
+          <a href={watchLink.url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1.5 px-2.5 py-1 transition-colors rounded-full ${watchLink.style}`}>
+            <PlayCircle size={12} strokeWidth={2.5} />
+            <span className="text-[10px] font-bold tracking-widest uppercase">{watchLink.label}</span>
+          </a>
+        ) : game.broadcast ? (
           <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-widest text-black/30 uppercase">
-            <Tv size={11} strokeWidth={2.5} />
-            {game.broadcast}
+            <Tv size={11} strokeWidth={2.5} /> {game.broadcast}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Away Team Row */}
       <div className="flex items-center justify-between w-full mb-3.5">
         <div className="flex items-center gap-3.5 min-w-0">
-          <TeamLogo abbr={game.away_team?.abbr} name={game.away_team?.name} logoUrl={game.away_team?.logo} size={isHero ? 38 : 32} />
+          <TeamLogo abbr={game.away_team?.abbr} name={game.away_team?.name} logoUrl={game.away_team?.logo} league={game.league} size={isHero ? 38 : 32} />
           <div className="flex flex-col">
-            <span className={`text-[17px] tracking-tight truncate ${awayWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
+            <span className={`text-[17px] tracking-tight truncate ${awayWins ? 'font-bold text-[#1D1D1F]' : 'font-semibold text-[#1D1D1F]/80'}`}>
               {game.away_team?.name || game.away_team?.abbr || 'TBD'}
             </span>
             {isScheduled && game.away_team?.record && (
-              <span className="text-[11px] font-medium text-black/40 tracking-wide mt-0.5">
-                {game.away_team.record}
-              </span>
+              <span className="text-[11px] font-medium text-black/40 tracking-wide mt-0.5">{game.away_team.record}</span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0 pl-4">
-          <span className={`font-mono tabular-nums tracking-tighter ${isHero ? 'text-[26px]' : 'text-[20px]'} ${awayWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
-            {isScheduled ? (game.away_team?.odds || '—') : (awayScore ?? '—')}
-          </span>
-        </div>
+        <span className={`font-mono tabular-nums tracking-tighter flex items-center justify-end ${isHero ? 'text-[26px]' : 'text-[20px]'} ${awayWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
+          {isScheduled ? (game.away_team?.odds || '—') : <AnimatedScore score={game.away_team.score} />}
+        </span>
       </div>
 
       {/* Home Team Row */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3.5 min-w-0">
-          <TeamLogo abbr={game.home_team?.abbr} name={game.home_team?.name} logoUrl={game.home_team?.logo} size={isHero ? 38 : 32} />
+          <TeamLogo abbr={game.home_team?.abbr} name={game.home_team?.name} logoUrl={game.home_team?.logo} league={game.league} size={isHero ? 38 : 32} />
           <div className="flex flex-col">
-            <span className={`text-[17px] tracking-tight truncate ${homeWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
+            <span className={`text-[17px] tracking-tight truncate ${homeWins ? 'font-bold text-[#1D1D1F]' : 'font-semibold text-[#1D1D1F]/80'}`}>
               {game.home_team?.name || game.home_team?.abbr || 'TBD'}
             </span>
             {isScheduled && game.home_team?.record && (
-              <span className="text-[11px] font-medium text-black/40 tracking-wide mt-0.5">
-                {game.home_team.record}
-              </span>
+              <span className="text-[11px] font-medium text-black/40 tracking-wide mt-0.5">{game.home_team.record}</span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0 pl-4">
-          <span className={`font-mono tabular-nums tracking-tighter ${isHero ? 'text-[26px]' : 'text-[20px]'} ${homeWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
-            {isScheduled ? (game.home_team?.odds || '—') : (homeScore ?? '—')}
-          </span>
-        </div>
+        <span className={`font-mono tabular-nums tracking-tighter flex items-center justify-end ${isHero ? 'text-[26px]' : 'text-[20px]'} ${homeWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
+          {isScheduled ? (game.home_team?.odds || '—') : <AnimatedScore score={game.home_team.score} />}
+        </span>
       </div>
 
-      {/* Footer Notes (Series / Odds) */}
-      {(game.note || (isHero && (game.away_team?.odds || game.home_team?.odds))) && (
-        <div className="mt-4 pt-3 border-t border-black/[0.04] flex items-start justify-between gap-4">
-          <p className="text-[12px] font-medium text-[#1D1D1F]/60 leading-snug">
-            {game.note}
-          </p>
-          {isHero && !isScheduled && (game.away_team?.odds || game.home_team?.odds) && (
-            <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-wide text-black/40 shrink-0 mt-0.5">
-              <span className="font-bold text-[#1D1D1F]/50">ODDS</span>
-              <span>{game.away_team?.abbr} {game.away_team?.odds || '—'}</span>
-            </div>
-          )}
+      {/* Footer Notes */}
+      {game.note && (
+        <div className="mt-4 pt-3 border-t border-black/[0.04]">
+          <p className="text-[12px] font-medium text-[#1D1D1F]/60 leading-snug">{game.note}</p>
         </div>
       )}
 
-      {/* Optional: Render Top Performers if Backend Provides Them */}
-      {isHero && game.top_performers && game.top_performers.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-black/[0.04] flex items-center gap-4 overflow-x-auto no-scrollbar mask-fade-right">
-          {game.top_performers.map((p, i) => (
-            <div key={i} className="flex items-center gap-2.5 shrink-0 pr-2">
-              <PlayerHeadshot name={p.name} playerId={p.playerId} headshotUrl={p.headshotUrl} league={game.league || guessLeague(game.away_team?.abbr)} size={32} />
-              <div className="flex flex-col">
-                <span className="text-[11px] font-semibold text-[#1D1D1F] tracking-tight">{p.name}</span>
-                <span className="text-[10px] font-medium text-black/40 tracking-wide">{p.statLine}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Hover Indicator */}
-      {isClickable && (
-        <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
-          <ChevronRight size={20} className="text-black/20" strokeWidth={2} />
+      {/* Deep Dive Action Dock */}
+      {isHero && onAction && (
+        <div className="mt-5 pt-4 border-t border-black/[0.04] flex gap-2 overflow-x-auto no-scrollbar mask-fade-right pb-1">
+          <ActionPill icon={LineChart} label="Matchup Analysis" onClick={() => onAction(`Analyze the matchup between ${matchupName}.`)} />
+          <ActionPill icon={TrendingUp} label="Live Betting Angles" onClick={() => onAction(`Get live betting trends, odds, and angles for the ${matchupName} game.`)} />
+          <ActionPill icon={User} label="Player Props" onClick={() => onAction(`Find the best player props for ${matchupName}.`)} />
         </div>
       )}
     </motion.div>
@@ -292,102 +244,139 @@ const GameDisplay = memo(({ game, isHero, onClick }: { game: Game; isHero?: bool
 });
 GameDisplay.displayName = 'GameDisplay';
 
-// ─── Main Component ────────────────────────────────────────────────────────
+// ─── Main Component & Polling Engine ───────────────────────────────────────
 
 export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (query: string) => void }> = ({ dataString, onAction }) => {
 
-  const buildDrillQuery = (game: Game): string => {
-    const away = game.away_team?.name || game.away_team?.abbr || 'Away';
-    const home = game.home_team?.name || game.home_team?.abbr || 'Home';
-    let q = `Give me a full matchup breakdown for ${away} at ${home}. Include recent form, key injuries, starting lineups if available, and betting analysis.`;
-    if (game.away_team?.odds || game.home_team?.odds) {
-      q += `\nOdds: ${away} ${game.away_team?.odds || '—'} / ${home} ${game.home_team?.odds || '—'}`;
-    }
-    return q;
-  };
-
-  // 1. SWR CACHE: Prevents UI flickering and console spam during LLM streams
   const lastValidData = useRef<ScoreboardData | null>(null);
 
-  const data = useMemo(() => {
+  // Live telemetry overrides from ESPN Edge
+  const [liveOverrides, setLiveOverrides] = useState<Record<string, Partial<Game>>>({});
+
+  // 1. Parse initial LLM Payload (SWR Protected)
+  const initialData = useMemo(() => {
     if (!dataString) return lastValidData.current;
-
     try {
-      // 2. BULLETPROOF AST PARSER
-      let cleanString = dataString
-        .replace(/^```[a-zA-Z]*\n?/i, '')
-        .replace(/\n?```$/i, '')
-        .trim();
+      let clean = dataString.replace(/^```[a-zA-Z]*\n?/i, '').replace(/\n?```$/i, '').trim().replace(/,\s*([\]}])/g, '$1');
+      const raw = JSON.parse(clean);
 
-      // Heal LLM hallucinated trailing commas before parsing
-      cleanString = cleanString.replace(/,\s*([\]}])/g, '$1');
-
-      const raw = JSON.parse(cleanString);
-
-      const normalizeTeam = (t: any, oddsObj?: any, isHome?: boolean): Team | undefined => {
-        if (!t) return undefined;
+      const normalizeTeam = (t: any, oddsObj?: any, isHome?: boolean): Team => {
+        if (!t) return { name: 'TBD', abbr: 'TBD' };
         let teamOdds = t.odds;
         if (!teamOdds && oddsObj) {
           if (isHome && oddsObj.spread) teamOdds = oddsObj.spread;
           else if (!isHome && oddsObj.overUnder) teamOdds = `O/U ${oddsObj.overUnder}`;
         }
         return {
-          name: t.name,
+          name: t.name || t.abbr || 'TBD',
           abbr: t.abbreviation || t.abbr || '',
           score: t.score,
           record: t.record,
-          logo: t.logo || t.logoUrl, 
+          logo: t.logo || t.logoUrl,
           odds: typeof teamOdds === 'string' ? teamOdds : teamOdds != null ? String(teamOdds) : undefined,
         };
       };
 
-      const normalizeGame = (ev: any): Game => {
+      const games: Game[] = (raw.games || raw.events || []).map((ev: any, idx: number) => {
         const oddsObj = ev.odds && typeof ev.odds === 'object' ? ev.odds : undefined;
         return {
-          id: ev.game_id || ev.id,
-          status: (ev.status || '').replace(/^STATUS_/i, '').toLowerCase(),
-          period: ev.period || ev.short_status || ev.date,
+          id: String(ev.game_id || ev.id || `game-${idx}`),
+          status: normalizeStatus((ev.status || '').replace(/^STATUS_/i, '').toLowerCase()),
+          period: ev.period || ev.short_status,
           date: ev.short_status || ev.date,
           broadcast: ev.broadcast,
           note: ev.series_summary || ev.game_notes || ev.note || '',
-          league: ev.league || raw.league,
-          top_performers: ev.top_performers,
-          away_team: normalizeTeam(ev.away_team, oddsObj, false) || { name: 'TBD', abbr: 'TBD' },
-          home_team: normalizeTeam(ev.home_team, oddsObj, true) || { name: 'TBD', abbr: 'TBD' },
+          league: ev.league || raw.league || 'mlb',
+          away_team: normalizeTeam(ev.away_team, oddsObj, false),
+          home_team: normalizeTeam(ev.home_team, oddsObj, true),
         };
-      };
+      });
 
-      const rawGames = raw.games || raw.events;
-      const games: Game[] = rawGames ? rawGames.map((ev: any) => normalizeGame(ev)) : [];
-
-      const parsedData = { summary_markdown: raw.summary_markdown, games };
-      lastValidData.current = parsedData;
-      return parsedData;
-
-    } catch (e) {
-      // 3. SILENT FALLBACK: Avoids syntax errors during generation stream
-      return lastValidData.current;
-    }
+      const parsed = { summary_markdown: raw.summary_markdown, games, league: raw.league };
+      lastValidData.current = parsed;
+      return parsed;
+    } catch { return lastValidData.current; }
   }, [dataString]);
+
+  // 2. Hydrate & Merge Edge Overrides into LLM Data
+  const data = useMemo(() => {
+    if (!initialData) return null;
+    const mergedGames = initialData.games.map(g => {
+      const override = liveOverrides[g.id];
+      if (!override) return g;
+      return {
+        ...g,
+        status: override.status || g.status,
+        period: override.period || g.period,
+        away_team: { ...g.away_team, score: override.away_team?.score ?? g.away_team.score },
+        home_team: { ...g.home_team, score: override.home_team?.score ?? g.home_team.score },
+      };
+    });
+    return { ...initialData, games: mergedGames };
+  }, [initialData, liveOverrides]);
+
+  // 3. The Telemetry Engine (Silent Background Polling)
+  const activeGameIds = useMemo(() => {
+    return initialData?.games?.filter(g => {
+      const s = normalizeStatus(g.status);
+      return s === 'live' || s === 'scheduled';
+    }).map(g => g.id).join(',') || '';
+  }, [initialData?.games]);
+
+  useEffect(() => {
+    if (!activeGameIds) return;
+
+    const league = initialData?.league || initialData?.games?.[0]?.league;
+    if (!league || !ESPN_SPORT_MAP[league.toLowerCase()]) return;
+
+    const fetchLiveUpdates = async () => {
+      try {
+        const sportPath = ESPN_SPORT_MAP[league.toLowerCase()];
+        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${sportPath}/scoreboard`);
+        if (!res.ok) return;
+        const json = await res.json();
+
+        const updates: Record<string, Partial<Game>> = {};
+        for (const ev of json.events || []) {
+          const comp = ev.competitions?.[0];
+          if (!comp) continue;
+
+          const state = comp.status?.type?.state;
+          updates[String(ev.id)] = {
+            status: state === 'in' ? 'live' : state === 'post' ? 'final' : 'scheduled',
+            period: comp.status?.type?.shortDetail,
+            away_team: { score: comp.competitors?.find((c: any) => c.homeAway === 'away')?.score } as Team,
+            home_team: { score: comp.competitors?.find((c: any) => c.homeAway === 'home')?.score } as Team,
+          } as Partial<Game>;
+        }
+
+        setLiveOverrides(prev => ({ ...prev, ...updates }));
+      } catch {
+        console.warn("[Scoreboard] Autonomous telemetry sync failed.");
+      }
+    };
+
+    fetchLiveUpdates();
+    const interval = setInterval(fetchLiveUpdates, 15000);
+    return () => clearInterval(interval);
+  }, [activeGameIds, initialData?.league, initialData?.games]);
+
+  // 4. Segmentation
+  const { liveGames, finalGames, scheduledGames } = useMemo(() => {
+    const live: Game[] = []; const final: Game[] = []; const sched: Game[] = [];
+    (data?.games || []).forEach(g => {
+      const s = normalizeStatus(g.status);
+      if (s === 'live') live.push(g);
+      else if (s === 'final') final.push(g);
+      else sched.push(g);
+    });
+    return { liveGames: live, finalGames: final, scheduledGames: sched };
+  }, [data?.games]);
 
   const summaryHtml = useMemo(() => {
     if (!data?.summary_markdown) return null;
     return DOMPurify.sanitize(marked.parse(data.summary_markdown, { breaks: true }) as string);
   }, [data?.summary_markdown]);
-
-  const { liveGames, finalGames, scheduledGames } = useMemo(() => {
-    const games = data?.games ?? [];
-    const live: Game[] = [];
-    const final: Game[] = [];
-    const scheduled: Game[] = [];
-    for (const g of games) {
-      const norm = normalizeStatus(g.status);
-      if (norm === 'live') live.push(g);
-      else if (norm === 'final') final.push(g);
-      else scheduled.push(g);
-    }
-    return { liveGames: live, finalGames: final, scheduledGames: scheduled };
-  }, [data?.games]);
 
   if (!data) {
     return (
@@ -401,26 +390,33 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 16 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={SPRING_TRANSITION}
       className="my-8 w-full bg-white/70 backdrop-blur-3xl rounded-[32px] shadow-[0_24px_60px_rgba(0,0,0,0.06),0_0_1px_rgba(0,0,0,0.1)] border border-black/[0.04] overflow-hidden isolate font-sans selection:bg-[#007AFF]/15"
     >
       {/* Header */}
       <div className="px-8 py-6 bg-white/40 flex items-center justify-between border-b border-black/[0.03]">
         <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-black/[0.02] flex items-center justify-center">
+            {liveGames.length > 0 ? (
+              <Activity size={18} className="text-[#1D1D1F]" strokeWidth={2} />
+            ) : (
+              <Trophy size={18} className="text-[#1D1D1F]" strokeWidth={1.5} />
+            )}
+          </div>
           <div>
             <h3 className="text-[15px] font-semibold text-[#1D1D1F] tracking-tight leading-none mb-1.5">Scoreboard</h3>
             <p className="text-[10px] font-semibold text-black/40 uppercase tracking-[0.18em] leading-none">
-              {liveGames.length > 0 ? 'Live & In Progress' : 'Schedule & Results'}
+              {liveGames.length > 0 ? 'Live Telemetry Active' : 'Schedule & Results'}
             </p>
           </div>
         </div>
       </div>
 
       <div className="p-8 space-y-10">
-        
+
         {/* Editorial Summary */}
         {summaryHtml && (
           <div
@@ -435,59 +431,35 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
         )}
 
         {/* Games Stack */}
-        
+
         {liveGames.length > 0 && (
           <div className="space-y-4">
             <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] px-1">In Progress</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {liveGames.map((game, idx) => (
-                <GameDisplay
-                  key={game.id || `live-${idx}`}
-                  game={game}
-                  isHero={true}
-                  onClick={onAction ? () => onAction(buildDrillQuery(game)) : undefined}
-                />
-              ))}
+              <AnimatePresence mode="popLayout">
+                {liveGames.map(game => <GameDisplay key={game.id} game={game} isHero={true} onAction={onAction} />)}
+              </AnimatePresence>
             </div>
           </div>
         )}
 
         {scheduledGames.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">
-              Upcoming
-            </h4>
+            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">Upcoming</h4>
             <div className="px-4 bg-[#F9F9F9]/50 rounded-[24px]">
-              {scheduledGames.map((game, idx) => (
-                <GameDisplay
-                  key={game.id || `sched-${idx}`}
-                  game={game}
-                  isHero={false}
-                  onClick={onAction ? () => onAction(buildDrillQuery(game)) : undefined}
-                />
-              ))}
+              {scheduledGames.map(game => <GameDisplay key={game.id} game={game} isHero={false} onAction={onAction} />)}
             </div>
           </div>
         )}
 
         {finalGames.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">
-              Final
-            </h4>
+            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">Final</h4>
             <div className="px-4 bg-[#F9F9F9]/50 rounded-[24px]">
-              {finalGames.map((game, idx) => (
-                <GameDisplay
-                  key={game.id || `final-${idx}`}
-                  game={game}
-                  isHero={false}
-                  onClick={onAction ? () => onAction(buildDrillQuery(game)) : undefined}
-                />
-              ))}
+              {finalGames.map(game => <GameDisplay key={game.id} game={game} isHero={false} onAction={onAction} />)}
             </div>
           </div>
         )}
-
       </div>
     </motion.div>
   );
