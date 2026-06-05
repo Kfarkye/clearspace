@@ -410,13 +410,6 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
       {/* Header */}
       <div className="px-8 py-6 bg-white/40 flex items-center justify-between border-b border-black/[0.03]">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-black/[0.02] flex items-center justify-center">
-            {liveGames.length > 0 ? (
-              <Activity size={18} className="text-[#1D1D1F]" strokeWidth={2} />
-            ) : (
-              <Trophy size={18} className="text-[#1D1D1F]" strokeWidth={1.5} />
-            )}
-          </div>
           <div>
             <h3 className="text-[15px] font-semibold text-[#1D1D1F] tracking-tight leading-none mb-1.5">Scoreboard</h3>
             <p className="text-[10px] font-semibold text-black/40 uppercase tracking-[0.18em] leading-none">
