@@ -6,17 +6,25 @@
 // ============================================================================
 
 import React, { useMemo, useRef, useState, useEffect, memo } from 'react';
-import { Activity, Tv, Trophy, TrendingUp, User, LineChart, PlayCircle } from 'lucide-react';
+import { Activity, Tv, Trophy, TrendingUp, User, LineChart, PlayCircle, Zap } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Interfaces & Config ──────────────────────────────────────────────────
 
-interface Team { name: string; abbr: string; logo?: string; score?: number | string; record?: string; odds?: string; }
+interface Team { name: string; abbr: string; logo?: string; score?: number | string; record?: string; odds?: string; id?: string; }
+interface LiveSituation {
+  downDistance?: string; possession?: string; isRedZone?: boolean;
+  outs?: number; onFirst?: boolean; onSecond?: boolean; onThird?: boolean;
+  lastPlay?: string; balls?: number; strikes?: number;
+}
+interface TopPerformer { name: string; headshotUrl?: string; statLine: string; }
 interface Game {
   id: string; status: string; period?: string; date?: string; broadcast?: string; note?: string;
   away_team: Team; home_team: Team; league?: string;
+  situation?: LiveSituation;
+  leaders?: TopPerformer[];
 }
 
 interface ScoreboardData { summary_markdown?: string; games: Game[]; league?: string; }
@@ -87,9 +95,12 @@ const resolveEspnLogoUrl = (league?: string, abbr?: string, teamName?: string, e
 
 // ─── Sub-Components ────────────────────────────────────────────────────────
 
-const TeamLogo = memo(({ abbr, name, logoUrl, league, size = 32 }: { abbr: string; name: string; logoUrl?: string; league?: string; size?: number }) => {
+const TeamLogo = memo(({ abbr, name, logoUrl, league, size = 32 }: { abbr?: string; name?: string; logoUrl?: string; league?: string; size?: number }) => {
   const [error, setError] = useState(false);
   const src = resolveEspnLogoUrl(league, abbr, name, logoUrl);
+
+  // P1 FIX: Clear stale error when the resolved URL changes (streaming data)
+  useEffect(() => { setError(false); }, [src]);
 
   if (!src || error || abbr === 'TBD') {
     return (
@@ -106,7 +117,7 @@ const TeamLogo = memo(({ abbr, name, logoUrl, league, size = 32 }: { abbr: strin
 
   return (
     <div style={{ width: size, height: size }} className="relative shrink-0 flex items-center justify-center bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-black/[0.04] p-1 overflow-hidden">
-      <img src={src} alt={name} onError={() => setError(true)} className="max-w-full max-h-full object-contain" loading="lazy" />
+      <img src={src} alt={name || abbr} onError={() => setError(true)} className="max-w-full max-h-full object-contain" loading="lazy" />
     </div>
   );
 });
@@ -130,6 +141,61 @@ const AnimatedScore = ({ score }: { score?: string | number }) => (
   </div>
 );
 
+/** LiveSituationDisplay — MLB diamond, NFL down & distance, generic last play */
+const LiveSituationDisplay = memo(({ situation, league }: { situation: LiveSituation; league?: string }) => {
+  const l = (league || '').toLowerCase();
+
+  if (l === 'mlb') {
+    return (
+      <div className="flex items-center gap-4 py-3 px-4 bg-black/[0.02] rounded-[16px] border border-black/[0.03]">
+        <div className="relative w-8 h-8 rotate-45 shrink-0">
+          <div className={`absolute top-0 right-0 w-3.5 h-3.5 rounded-sm border-2 ${situation.onFirst ? 'bg-[#007AFF] border-[#007AFF]' : 'border-black/20 bg-white'}`} />
+          <div className={`absolute top-0 left-0 w-3.5 h-3.5 rounded-sm border-2 ${situation.onSecond ? 'bg-[#007AFF] border-[#007AFF]' : 'border-black/20 bg-white'}`} />
+          <div className={`absolute bottom-0 left-0 w-3.5 h-3.5 rounded-sm border-2 ${situation.onThird ? 'bg-[#007AFF] border-[#007AFF]' : 'border-black/20 bg-white'}`} />
+          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-sm border-2 border-black/20 bg-white" />
+        </div>
+        <div className="flex flex-col gap-0.5 border-l border-black/[0.06] pl-4">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-bold tracking-widest text-black/40 uppercase">Outs</span>
+            <div className="flex gap-1">
+              {[1, 2, 3].map(i => (
+                <span key={i} className={`w-2 h-2 rounded-full ${i <= (situation.outs || 0) ? 'bg-[#1D1D1F]' : 'bg-black/10'}`} />
+              ))}
+            </div>
+          </div>
+          {situation.lastPlay && (
+            <span className="text-[11.5px] font-medium text-[#1D1D1F]/80 leading-snug line-clamp-2 mt-1">{situation.lastPlay}</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (l === 'nfl' || l === 'ncaaf' || l === 'cfb') {
+    return (
+      <div className="flex items-center gap-3 py-2.5 px-4 bg-black/[0.02] rounded-[16px] border border-black/[0.03]">
+        <div className={`w-1 h-8 rounded-full ${situation.isRedZone ? 'bg-[#FF9500]' : 'bg-[#007AFF]'}`} />
+        <div className="flex flex-col min-w-0">
+          <span className="text-[13px] font-bold text-[#1D1D1F] tracking-tight truncate">{situation.downDistance || '1st & 10'}</span>
+          {situation.lastPlay && <span className="text-[11px] font-medium text-black/50 truncate">{situation.lastPlay}</span>}
+        </div>
+      </div>
+    );
+  }
+
+  if (situation.lastPlay) {
+    return (
+      <div className="flex items-start gap-2.5 py-3 px-4 bg-black/[0.02] rounded-[16px] border border-black/[0.03]">
+        <Zap size={14} className="text-[#007AFF] shrink-0 mt-0.5" />
+        <span className="text-[12px] font-medium text-[#1D1D1F]/80 leading-snug">{situation.lastPlay}</span>
+      </div>
+    );
+  }
+
+  return null;
+});
+LiveSituationDisplay.displayName = 'LiveSituationDisplay';
+
 /** Action Pill for Contextual Drill-Downs */
 const ActionPill = ({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) => (
   <motion.button
@@ -149,8 +215,10 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
   const isScheduled = status === 'scheduled';
   const awayWins = !isScheduled && Number(game.away_team?.score) > Number(game.home_team?.score ?? 0);
   const homeWins = !isScheduled && Number(game.home_team?.score) > Number(game.away_team?.score ?? 0);
+  const awayHasBall = status === 'live' && game.situation?.possession === game.away_team?.id;
+  const homeHasBall = status === 'live' && game.situation?.possession === game.home_team?.id;
   const watchLink = resolveWatchLink(game.league, game.broadcast);
-  const matchupName = `${game.away_team.name || game.away_team.abbr} vs ${game.home_team.name || game.home_team.abbr}`;
+  const matchupName = `${game.away_team?.name || game.away_team?.abbr} vs ${game.home_team?.name || game.home_team?.abbr}`;
 
   return (
     <motion.div
@@ -191,7 +259,10 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
       {/* Away Team Row */}
       <div className="flex items-center justify-between w-full mb-3.5">
         <div className="flex items-center gap-3.5 min-w-0">
-          <TeamLogo abbr={game.away_team?.abbr} name={game.away_team?.name} logoUrl={game.away_team?.logo} league={game.league} size={isHero ? 38 : 32} />
+          <div className="relative">
+            <TeamLogo abbr={game.away_team?.abbr} name={game.away_team?.name} logoUrl={game.away_team?.logo} league={game.league} size={isHero ? 38 : 32} />
+            {awayHasBall && <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#FF9500] border-2 border-white rounded-full shadow-sm" />}
+          </div>
           <div className="flex flex-col">
             <span className={`text-[17px] tracking-tight truncate ${awayWins ? 'font-bold text-[#1D1D1F]' : 'font-semibold text-[#1D1D1F]/80'}`}>
               {game.away_team?.name || game.away_team?.abbr || 'TBD'}
@@ -202,14 +273,17 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
           </div>
         </div>
         <span className={`font-mono tabular-nums tracking-tighter flex items-center justify-end ${isHero ? 'text-[26px]' : 'text-[20px]'} ${awayWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
-          {isScheduled ? (game.away_team?.odds || '—') : <AnimatedScore score={game.away_team.score} />}
+          {isScheduled ? (game.away_team?.odds || '—') : <AnimatedScore score={game.away_team?.score} />}
         </span>
       </div>
 
       {/* Home Team Row */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3.5 min-w-0">
-          <TeamLogo abbr={game.home_team?.abbr} name={game.home_team?.name} logoUrl={game.home_team?.logo} league={game.league} size={isHero ? 38 : 32} />
+          <div className="relative">
+            <TeamLogo abbr={game.home_team?.abbr} name={game.home_team?.name} logoUrl={game.home_team?.logo} league={game.league} size={isHero ? 38 : 32} />
+            {homeHasBall && <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#FF9500] border-2 border-white rounded-full shadow-sm" />}
+          </div>
           <div className="flex flex-col">
             <span className={`text-[17px] tracking-tight truncate ${homeWins ? 'font-bold text-[#1D1D1F]' : 'font-semibold text-[#1D1D1F]/80'}`}>
               {game.home_team?.name || game.home_team?.abbr || 'TBD'}
@@ -220,7 +294,7 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
           </div>
         </div>
         <span className={`font-mono tabular-nums tracking-tighter flex items-center justify-end ${isHero ? 'text-[26px]' : 'text-[20px]'} ${homeWins ? 'font-bold text-[#1D1D1F]' : 'font-medium text-[#1D1D1F]/80'}`}>
-          {isScheduled ? (game.home_team?.odds || '—') : <AnimatedScore score={game.home_team.score} />}
+          {isScheduled ? (game.home_team?.odds || '—') : <AnimatedScore score={game.home_team?.score} />}
         </span>
       </div>
 
@@ -228,6 +302,30 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
       {game.note && (
         <div className="mt-4 pt-3 border-t border-black/[0.04]">
           <p className="text-[12px] font-medium text-[#1D1D1F]/60 leading-snug">{game.note}</p>
+        </div>
+      )}
+
+      {/* Live Situation (MLB diamond / NFL down & distance) */}
+      {isHero && game.situation && status === 'live' && (
+        <div className="mt-5 border-t border-black/[0.04] pt-4">
+          <LiveSituationDisplay situation={game.situation} league={game.league} />
+        </div>
+      )}
+
+      {/* Top Performers */}
+      {isHero && game.leaders && game.leaders.length > 0 && (
+        <div className="mt-4 flex items-center gap-4 overflow-x-auto no-scrollbar mask-fade-right">
+          {game.leaders.map((p, i) => (
+            <div key={i} className="flex items-center gap-2.5 shrink-0 pr-2">
+              <div className="w-8 h-8 rounded-full bg-[#F5F5F7] border border-black/[0.04] overflow-hidden flex items-end justify-center shrink-0">
+                {p.headshotUrl ? <img src={p.headshotUrl} alt={p.name} className="w-[90%] h-[90%] object-cover object-bottom" loading="lazy" /> : <User size={16} className="text-black/20 mb-1" />}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11.5px] font-semibold text-[#1D1D1F] tracking-tight">{p.name}</span>
+                <span className="text-[10.5px] font-medium text-black/50 tracking-wide">{p.statLine}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -307,15 +405,15 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
 
       const newStatus = override.status || g.status;
       const newPeriod = override.period || g.period;
-      const newAwayScore = override.away_team?.score ?? g.away_team.score;
-      const newHomeScore = override.home_team?.score ?? g.home_team.score;
+      const newAwayScore = override.away_team?.score ?? g.away_team?.score;
+      const newHomeScore = override.home_team?.score ?? g.home_team?.score;
 
       // Preserve object reference if data hasn't mutated to prevent memo invalidation
       if (
         newStatus === g.status &&
         newPeriod === g.period &&
-        newAwayScore === g.away_team.score &&
-        newHomeScore === g.home_team.score
+        newAwayScore === g.away_team?.score &&
+        newHomeScore === g.home_team?.score
       ) {
         return g;
       }
@@ -360,11 +458,30 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
           if (!comp) continue;
 
           const state = comp.status?.type?.state;
+
+          // Parse live situation from ESPN edge data
+          let sit: LiveSituation | undefined;
+          if (comp.situation) {
+            sit = {
+              downDistance: comp.situation.downDistanceText,
+              possession: comp.situation.possession ? String(comp.situation.possession) : undefined,
+              isRedZone: comp.situation.isRedZone,
+              outs: comp.situation.outs,
+              onFirst: !!comp.situation.onFirst,
+              onSecond: !!comp.situation.onSecond,
+              onThird: !!comp.situation.onThird,
+              lastPlay: comp.situation.lastPlay?.text,
+              balls: comp.situation.balls,
+              strikes: comp.situation.strikes,
+            };
+          }
+
           updates[String(ev.id)] = {
             status: state === 'in' ? 'live' : state === 'post' ? 'final' : 'scheduled',
             period: comp.status?.type?.shortDetail,
             away_team: { score: comp.competitors?.find((c: any) => c.homeAway === 'away')?.score } as Team,
             home_team: { score: comp.competitors?.find((c: any) => c.homeAway === 'home')?.score } as Team,
+            situation: sit,
           } as Partial<Game>;
         }
 
