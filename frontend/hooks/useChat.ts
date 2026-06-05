@@ -207,7 +207,7 @@ export function useChat(workspaceToken: string | null) {
         config: {
           systemInstruction,
           thinkingConfig: { thinkingBudget: THINKING_BUDGETS[thinkingMode] },
-          tools: isOperator ? [{ functionDeclarations: tools }] : [{ googleSearch: {} }, { urlContext: {} }],
+          tools: isOperator ? [{ functionDeclarations: tools }, { googleSearch: {} }] : [{ googleSearch: {} }, { urlContext: {} }],
         },
       });
       setError(null);
@@ -349,7 +349,7 @@ export function useChat(workspaceToken: string | null) {
       return fullText;
     }
 
-    const HEDGE_SIGNALS = /\b(not among the sports|cannot access|can't access|not available through|don't have access|unable to provide|not supported|I can only provide information on sports available through)\b/i;
+    const HEDGE_SIGNALS = /\b(not among|cannot access|can't access|can't look up|not available|don't have access|don't have.{0,20}(?:data|information|tool)|unable to (?:provide|retrieve|access|look)|not supported|can only provide|not something I can|my tools don't|outside.{0,15}(?:scope|capabilities)|no tool|can't retrieve|cannot retrieve|I can only provide information on sports available through)\b/i;
     const isHedge = chatMode === 'operator' && functionCalls.length === 0 && responseText && HEDGE_SIGNALS.test(responseText);
 
     if (chatMode === 'operator' && functionCalls.length === 0 && responseText) {
