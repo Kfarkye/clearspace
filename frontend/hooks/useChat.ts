@@ -207,7 +207,7 @@ export function useChat(workspaceToken: string | null) {
         config: {
           systemInstruction,
           thinkingConfig: { thinkingBudget: THINKING_BUDGETS[thinkingMode] },
-          tools: isOperator ? [{ functionDeclarations: tools }, { googleSearch: {} }] : [{ googleSearch: {} }, { urlContext: {} }],
+          tools: isOperator ? [{ functionDeclarations: tools }] : [{ googleSearch: {} }, { urlContext: {} }],
         },
       });
       setError(null);
