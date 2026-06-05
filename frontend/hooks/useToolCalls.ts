@@ -12,7 +12,7 @@ import * as dataService from '../services/dataService';
 
 export const workspaceTool: FunctionDeclaration = {
   name: 'get_workspace_context',
-  description: 'Fetches emails, calendar events, and tasks from Google Workspace. Supports custom email queries and pagination.',
+  description: 'Fetches the user\'s PERSONAL Google Workspace data: emails, calendar events, and tasks. Supports custom email queries and pagination. CRITICAL: ONLY use this tool when the user EXPLICITLY asks about "my emails", "my calendar", "my schedule", "my tasks", or "my documents". DO NOT use this tool to answer general knowledge questions, follow-up questions about public topics (licenses, regulations, sports, etc.), or to investigate vague terms like "slowdowns", "hiccups", or "status" unless the user specifically references their personal workspace.',
   parameters: {
     type: Type.OBJECT,
     properties: {

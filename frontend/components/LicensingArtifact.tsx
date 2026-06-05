@@ -7,7 +7,7 @@
 import React, { useMemo, useRef } from 'react';
 import { 
   ShieldCheck, BookOpen, Clock, Award, DollarSign, 
-  CheckCircle2, Building2, ArrowUpRight 
+  CheckCircle2, Building2, ArrowUpRight, AlertTriangle 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -25,6 +25,7 @@ interface LicensingData {
     fees?: string;
   };
   requirements?: string[];
+  common_delays?: string[];
   source_url?: string;
 }
 
@@ -75,6 +76,7 @@ export const LicensingArtifact: React.FC<{ dataString: string }> = ({ dataString
   }
 
   const requirements = Array.isArray(data.requirements) ? data.requirements : [];
+  const delays = Array.isArray(data.common_delays) ? data.common_delays : [];
 
   return (
     <motion.div 
@@ -148,6 +150,27 @@ export const LicensingArtifact: React.FC<{ dataString: string }> = ({ dataString
                   </div>
                   <span className="text-[14.5px] font-medium text-[#1D1D1F]/80 leading-snug tracking-tight text-pretty">
                     {req}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Common Delays / Slowdowns ─────────────────────── */}
+        {delays.length > 0 && (
+          <div className="space-y-4">
+            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1">
+              Common Delays
+            </h4>
+            <div className="bg-[#FF9500]/[0.04] rounded-[24px] border border-[#FF9500]/10 p-2">
+              {delays.map((delay, idx) => (
+                <div key={idx} className="flex items-start gap-3.5 p-3.5 rounded-[16px]">
+                  <div className="mt-0.5 w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 bg-[#FF9500]/10">
+                    <AlertTriangle size={11} className="text-[#FF9500]" strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[14px] font-medium text-[#1D1D1F]/70 leading-snug tracking-tight text-pretty">
+                    {delay}
                   </span>
                 </div>
               ))}
