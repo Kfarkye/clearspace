@@ -304,12 +304,28 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
     const mergedGames = initialData.games.map(g => {
       const override = liveOverrides[g.id];
       if (!override) return g;
+
+      const newStatus = override.status || g.status;
+      const newPeriod = override.period || g.period;
+      const newAwayScore = override.away_team?.score ?? g.away_team.score;
+      const newHomeScore = override.home_team?.score ?? g.home_team.score;
+
+      // Preserve object reference if data hasn't mutated to prevent memo invalidation
+      if (
+        newStatus === g.status &&
+        newPeriod === g.period &&
+        newAwayScore === g.away_team.score &&
+        newHomeScore === g.home_team.score
+      ) {
+        return g;
+      }
+
       return {
         ...g,
-        status: override.status || g.status,
-        period: override.period || g.period,
-        away_team: { ...g.away_team, score: override.away_team?.score ?? g.away_team.score },
-        home_team: { ...g.home_team, score: override.home_team?.score ?? g.home_team.score },
+        status: newStatus,
+        period: newPeriod,
+        away_team: { ...g.away_team, score: newAwayScore },
+        home_team: { ...g.home_team, score: newHomeScore },
       };
     });
     return { ...initialData, games: mergedGames };
@@ -329,11 +345,13 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
     const league = initialData?.league || initialData?.games?.[0]?.league;
     if (!league || !ESPN_SPORT_MAP[league.toLowerCase()]) return;
 
+    let cancelled = false;
+
     const fetchLiveUpdates = async () => {
       try {
         const sportPath = ESPN_SPORT_MAP[league.toLowerCase()];
         const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${sportPath}/scoreboard`);
-        if (!res.ok) return;
+        if (!res.ok || cancelled) return;
         const json = await res.json();
 
         const updates: Record<string, Partial<Game>> = {};
@@ -350,7 +368,9 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
           } as Partial<Game>;
         }
 
-        setLiveOverrides(prev => ({ ...prev, ...updates }));
+        if (!cancelled) {
+          setLiveOverrides(prev => ({ ...prev, ...updates }));
+        }
       } catch {
         console.warn("[Scoreboard] Autonomous telemetry sync failed.");
       }
@@ -358,7 +378,10 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
 
     fetchLiveUpdates();
     const interval = setInterval(fetchLiveUpdates, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [activeGameIds, initialData?.league, initialData?.games]);
 
   // 4. Segmentation
@@ -374,8 +397,13 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
   }, [data?.games]);
 
   const summaryHtml = useMemo(() => {
-    if (!data?.summary_markdown) return null;
-    return DOMPurify.sanitize(marked.parse(data.summary_markdown, { breaks: true }) as string);
+    if (!data?.summary_markdown) return '';
+    try {
+      const rawHtml = marked.parse(data.summary_markdown, { breaks: true }) as string;
+      return typeof window !== 'undefined' ? DOMPurify.sanitize(rawHtml) : rawHtml;
+    } catch {
+      return '';
+    }
   }, [data?.summary_markdown]);
 
   if (!data) {
