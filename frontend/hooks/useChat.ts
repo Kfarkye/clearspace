@@ -7,14 +7,68 @@ import * as dataService from '../services/dataService';
 import * as mutationQueue from '../services/mutationQueue';
 
 export type ChatMode = 'operator' | 'standard';
-export type ThinkingMode = 'fast' | 'balanced' | 'deep';
+export type ThinkingMode = 'fast' | 'balanced' | 'deep' | 'web';
 
 // Thinking budget configuration for different thinking modes
 const THINKING_BUDGETS: Record<ThinkingMode, number> = {
   fast: 0,
   balanced: 8192,
+  web: 0,
   deep: 24576,
 };
+
+// ── 🛡️ CONTEXTUAL EVICTION (The Memory Wiper) ─────────────────────────────
+// Strips massive tool response payloads from older conversational turns.
+// Prevents old error states / JSON blobs from hijacking the LLM's attention.
+// Keeps the most recent N message entries fully intact for conversational flow.
+
+function sanitizeHistoryForIsolation(historyArray: any[], preserveRecent: number = 4): any[] {
+  if (!Array.isArray(historyArray) || historyArray.length <= preserveRecent) return historyArray;
+
+  return historyArray.map((msg, index) => {
+    // Keep the most recent interactions fully intact for immediate conversational flow
+    if (index >= historyArray.length - preserveRecent) return msg;
+
+    // Only process messages that could contain tool responses
+    if ((msg.role === 'model' || msg.role === 'function' || msg.role === 'user') && Array.isArray(msg.parts)) {
+      const hasFunctionData = msg.parts.some((p: any) => p.functionResponse || p.functionCall);
+      if (!hasFunctionData) return msg;
+
+      try {
+        // P2 FIX: structuredClone is the modern native standard — avoids
+        // JSON.parse/stringify's event loop blocking and undefined-dropping
+        const clonedMsg = structuredClone(msg);
+
+        clonedMsg.parts = clonedMsg.parts.map((part: any) => {
+          if (part.functionResponse && part.functionResponse.response) {
+            return {
+              functionResponse: {
+                name: part.functionResponse.name,
+                // 🛡️ CRITICAL: Replace heavy payload/error with lightweight tombstone
+                response: { _system_note: 'Task processed in previous turn. Context pruned to maintain domain isolation.' }
+              }
+            };
+          }
+          // Also prune functionCall args from older turns to reduce noise
+          if (part.functionCall && part.functionCall.args) {
+            return {
+              functionCall: {
+                name: part.functionCall.name,
+                args: { _pruned: true }
+              }
+            };
+          }
+          return part;
+        });
+        return clonedMsg;
+      } catch {
+        // Fallback: return original if cloning fails — better than dropping context
+        return msg;
+      }
+    }
+    return msg;
+  });
+}
 
 // --- Source Routing: URL Normalization ---
 const DOMAIN_PATTERN = /(?<![@\w])([a-zA-Z0-9-]+\.(to|com|org|net|io|co|app|dev|ai|gg|tv|live|bet|sports|xyz))(?!\S*@)\b/gi;
@@ -141,7 +195,24 @@ export function useChat(workspaceToken: string | null) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chatMode, setChatMode] = useState<ChatMode>('operator');
-  const [thinkingMode, setThinkingMode] = useState<ThinkingMode>('fast');
+  const [thinkingMode, setThinkingModeRaw] = useState<ThinkingMode>('fast');
+
+  // Wrapped setter: 'web' → standard mode (search-only), all others → operator (tools+search)
+  const setThinkingMode = useCallback((mode: ThinkingMode) => {
+    setThinkingModeRaw(mode);
+    const newChatMode: ChatMode = mode === 'web' ? 'standard' : 'operator';
+    setChatMode(prev => {
+      if (prev !== newChatMode) {
+        // Mode boundary crossed — reset session
+        setMessages([]);
+        setIsLoading(false);
+        threadMemory.current = [];
+        setConversationId(null);
+        chatRef.current = null;
+      }
+      return newChatMode;
+    });
+  }, []);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [failedSaveIds, setFailedSaveIds] = useState<Set<string>>(new Set());
   const [conversationTitle, setConversationTitle] = useState<string | null>(null);
@@ -156,7 +227,8 @@ export function useChat(workspaceToken: string | null) {
   const { dispatchToolCall, tools } = useToolCalls(workspaceToken);
 
   const cacheToolResponse = useCallback((toolName: string, data: any) => {
-    const summary = toolName === 'get_sports_data'
+    const isSportsTool = toolName === 'get_scoreboard' || toolName === 'get_game_detail' || toolName === 'get_play_by_play' || toolName === 'get_live_odds';
+    const summary = isSportsTool
       ? buildSportsSummary(data)
       : toolName === 'get_workspace_context'
         ? buildWorkspaceSummary(data)
@@ -201,13 +273,17 @@ export function useChat(workspaceToken: string | null) {
       }
       pendingHistory.current = null; // Clear to prevent reuse
 
+      // 🛡️ CONTEXTUAL EVICTION: Sanitize history before feeding to the model.
+      // Strips toxic tool payloads from older turns to prevent attention hijacking.
+      const safeHistory = sanitizeHistoryForIsolation(history || []);
+
       chatRef.current = ai.chats.create({
         model: MODEL_ID,
-        history: history || [],
+        history: safeHistory,
         config: {
           systemInstruction,
           thinkingConfig: { thinkingBudget: THINKING_BUDGETS[thinkingMode] },
-          tools: isOperator ? [{ functionDeclarations: tools }] : [{ googleSearch: {} }, { urlContext: {} }],
+          tools: isOperator ? [{ functionDeclarations: tools }, { googleSearch: {} }, { urlContext: {} }] : [{ googleSearch: {} }, { urlContext: {} }],
         },
       });
       setError(null);
@@ -270,11 +346,20 @@ export function useChat(workspaceToken: string | null) {
     const functionCalls: any[] = [];
     try {
       for await (const chunk of stream) {
-        if (chunk.functionCalls) {
+        if (chunk.functionCalls && chunk.functionCalls.length > 0) {
+          // It's a tool call chunk. DO NOT access chunk.text — triggers SDK warning.
           functionCalls.push(...chunk.functionCalls);
-        } else if (chunk.text) {
-          responseText += chunk.text;
-          updateLastMessage(responseText);
+        } else {
+          // Safe to read text without triggering the yellow SDK warning
+          try {
+            const chunkText = chunk.text;
+            if (chunkText) {
+              responseText += chunkText;
+              updateLastMessage(responseText);
+            }
+          } catch {
+            // Ignore getter errors gracefully
+          }
         }
       }
     } catch (err) {
@@ -328,7 +413,8 @@ export function useChat(workspaceToken: string | null) {
 
           cacheToolResponse(call.name, toolResult);
 
-          const artifact = call.name === 'get_sports_data'
+          const isSportsCall = call.name === 'get_scoreboard' || call.name === 'get_game_detail' || call.name === 'get_play_by_play' || call.name === 'get_live_odds';
+          const artifact = isSportsCall
             ? getSportsArtifact(chatMode, input)
             : TOOL_ARTIFACT_MAP[call.name] || null;
 
@@ -347,6 +433,31 @@ export function useChat(workspaceToken: string | null) {
         fullText = newText;
         pendingCalls = newCalls;
       }
+
+      // 🛡️ CONTEXTUAL EVICTION: After tool-heavy exchanges, rebuild the chat session
+      // with sanitized history. This prevents the accumulated tool response payloads
+      // from contaminating the LLM's reasoning on subsequent user messages.
+      if (chatRef.current && genAiClientRef.current && iteration > 0) {
+        try {
+          const rawHistory = await chatRef.current.getHistory();
+          const sanitizedHistory = sanitizeHistoryForIsolation(rawHistory);
+          const isOperator = chatMode === 'operator';
+          chatRef.current = genAiClientRef.current.chats.create({
+            model: MODEL_ID,
+            history: sanitizedHistory,
+            config: {
+              systemInstruction: buildDateContext() + (isOperator ? TRUTH_SYSTEM_INSTRUCTION : GEMINI_SYSTEM_INSTRUCTION),
+              thinkingConfig: { thinkingBudget: THINKING_BUDGETS[thinkingMode] },
+              tools: isOperator ? [{ functionDeclarations: tools }, { googleSearch: {} }, { urlContext: {} }] : [{ googleSearch: {} }, { urlContext: {} }],
+            },
+          });
+          console.log(`[FIREWALL] Chat rebuilt with sanitized history after ${iteration} tool iterations`);
+        } catch (e) {
+          // Non-fatal — next turn proceeds with unsanitized history
+          console.warn('[FIREWALL] Post-tool history rebuild failed:', e);
+        }
+      }
+
       return fullText;
     }
 

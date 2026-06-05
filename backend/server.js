@@ -6,6 +6,13 @@ import * as spannerDAL from './spanner.js';
 import cookieParser from 'cookie-parser';
 import { classify, getDispatch, MODES } from './lib/router.js';
 import { mountChatRoute } from './lib/chat-handler.js';
+import { mountGitHubRoutes } from './lib/github-routes.js';
+import { handleSportsQuery } from './lib/sports-handler.js';
+import { handleWinProbabilityQuery } from './lib/win-probability-handler.js';
+import { handlePlayerPropQuery } from './lib/player-prop-handler.js';
+import { fetchDataTable } from './lib/data-table-agent.js';
+import * as wcDAL from './lib/world-cup-dal.js';
+import * as sportsDAL from './lib/sports-dal.js';
 
 /**
  * @license
@@ -51,7 +58,7 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 }));
 
-// CORS: only allow requests from the Vite dev server and the served frontend
+// CORS: allow Vite dev server, served frontend, and Cloud Run production origins
 const ALLOWED_ORIGINS = [
   'http://localhost:5175',
   'http://localhost:5174',
@@ -60,10 +67,17 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:5174',
   'http://127.0.0.1:5173',
 ];
+// Add the Cloud Run APP_URL if set
+if (process.env.APP_URL) {
+  ALLOWED_ORIGINS.push(process.env.APP_URL.replace(/\/$/, ''));
+}
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (same-origin, curl, server-to-server)
     if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else if (origin.endsWith('.run.app')) {
+      // Allow any Cloud Run origin (same project, different revisions)
       callback(null, true);
     } else {
       // Fail gracefully by omitting Access-Control headers rather than throwing 500s
@@ -135,6 +149,9 @@ app.use('/api-proxy', (req, res, next) => {
 
 // --- Auth Routes (shared @clearspace/auth) ---
 app.use('/api/auth', createAuthRoutes(sessionManager, express));
+
+// --- GitHub OAuth + Repo API Routes ---
+mountGitHubRoutes(app);
 
 // --- Persistent Data API Routes ---
 // Protected by session auth — requires signed-in user with req.userSub
@@ -1020,6 +1037,256 @@ app.get('/api-proxy/odds/:sport', async (req, res) => {
   }
 });
 
+// --- Unified Intelligence Routes ─────────────────────────────────────────────
+// These endpoints expose the backend's production-grade handlers to the frontend.
+// The frontend Vertex AI tool calls route through these instead of raw ESPN proxies,
+// inheriting caching, Kalshi/Polymarket fusion, injury data, and PrizePicks fusion.
+
+app.post('/api/intelligence/sports/query', async (req, res) => {
+  try {
+    const result = await handleSportsQuery(req.body);
+    res.json(result);
+  } catch (e) {
+    console.error('[Intelligence:Sports] Error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/intelligence/sports/win-probability', async (req, res) => {
+  try {
+    const result = await handleWinProbabilityQuery(req.body);
+    res.json(result);
+  } catch (e) {
+    console.error('[Intelligence:WinProb] Error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/intelligence/sports/player-props', async (req, res) => {
+  try {
+    const result = await handlePlayerPropQuery(req.body);
+    res.json(result);
+  } catch (e) {
+    console.error('[Intelligence:Props] Error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/intelligence/sports/data-table', async (req, res) => {
+  try {
+    const result = await fetchDataTable(req.body.query);
+    res.json(result);
+  } catch (e) {
+    console.error('[Intelligence:DataTable] Error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Unified Sports & Leagues Data API ───────────────────────────────────────
+// Serves sports data from Spanner: aura-governance-instance/sports-db
+// Supports NBA, NFL, MLB, NHL, WORLD_CUP, etc. via the league_id parameter
+
+const sportsRouter = express.Router();
+
+// Leagues registry
+sportsRouter.get('/leagues', async (req, res) => {
+  try {
+    const leagues = await sportsDAL.getLeagues();
+    res.json({ leagues });
+  } catch (e) {
+    console.error('[Sports:Leagues] Error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Teams: all or by group (with option to exclude placeholders)
+sportsRouter.get('/:league/teams', async (req, res) => {
+  try {
+    const leagueId = req.params.league.toUpperCase();
+    const includePlaceholders = req.query.includePlaceholders === 'true';
+    let teams = await sportsDAL.getTeams(leagueId, req.query.group || undefined);
+    if (!includePlaceholders) {
+      teams = teams.filter(t => !t.isPlaceholder);
+    }
+    res.json({ teams });
+  } catch (e) {
+    console.error(`[Sports:Teams:${req.params.league}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Single team by code
+sportsRouter.get('/:league/teams/:code', async (req, res) => {
+  try {
+    const team = await sportsDAL.getTeam(req.params.league.toUpperCase(), req.params.code.toUpperCase());
+    if (!team) return res.status(404).json({ error: 'Team not found.' });
+    res.json(team);
+  } catch (e) {
+    console.error(`[Sports:Team:${req.params.league}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Venues (shared globally)
+sportsRouter.get('/venues', async (_req, res) => {
+  try {
+    const venues = await sportsDAL.getVenues();
+    res.json({ venues });
+  } catch (e) {
+    console.error('[Sports:Venues] Error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Matches: filtered by ?group=D or ?team=USA or ?stage=group
+sportsRouter.get('/:league/matches', async (req, res) => {
+  try {
+    const matches = await sportsDAL.getMatches(req.params.league.toUpperCase(), {
+      group: req.query.group,
+      stage: req.query.stage,
+      team: req.query.team,
+    });
+    res.json({ matches });
+  } catch (e) {
+    console.error(`[Sports:Matches:${req.params.league}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Single match with full odds/edges/predictions
+sportsRouter.get('/:league/matches/:id', async (req, res) => {
+  try {
+    const detail = await sportsDAL.getMatchDetail(req.params.league.toUpperCase(), req.params.id);
+    if (!detail) return res.status(404).json({ error: 'Match not found.' });
+    res.json(detail);
+  } catch (e) {
+    console.error(`[Sports:MatchDetail:${req.params.league}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Edges: all or by ?team=USA&minEdge=2
+sportsRouter.get('/:league/edges', async (req, res) => {
+  try {
+    const edges = await sportsDAL.getEdges(req.params.league.toUpperCase(), {
+      team: req.query.team,
+      minEdge: req.query.minEdge ? parseFloat(req.query.minEdge) : undefined,
+    });
+    res.json({ edges });
+  } catch (e) {
+    console.error(`[Sports:Edges:${req.params.league}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Odds: all outright futures and winner lines
+sportsRouter.get('/:league/odds', async (req, res) => {
+  try {
+    const filters = {};
+    if (req.query.match_id) filters.matchId = req.query.match_id;
+    if (req.query.market) filters.marketType = req.query.market;
+    if (req.query.limit) {
+      const parsedLimit = parseInt(req.query.limit, 10);
+      if (!isNaN(parsedLimit)) filters.limit = parsedLimit;
+    }
+    const odds = await sportsDAL.getOdds(req.params.league.toUpperCase(), filters);
+    res.json({ odds });
+  } catch (e) {
+    console.error(`[Sports:Odds:${req.params.league}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Full group snapshot (teams + matches + odds + edges + predictions)
+sportsRouter.get('/:league/groups/:letter', async (req, res) => {
+  try {
+    const snapshot = await sportsDAL.getGroupSnapshot(req.params.league.toUpperCase(), req.params.letter.toUpperCase());
+    res.json(snapshot);
+  } catch (e) {
+    console.error(`[Sports:GroupSnapshot:${req.params.league}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Team Power Ratings
+sportsRouter.get('/:league/teams/:code/power-ratings', async (req, res) => {
+  try {
+    const ratings = await sportsDAL.getTeamPowerRatings(req.params.league.toUpperCase(), req.params.code.toUpperCase());
+    res.json({ ratings });
+  } catch (e) {
+    console.error(`[Sports:PowerRatings:${req.params.league}:${req.params.code}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Team Trends
+sportsRouter.get('/:league/teams/:code/trends', async (req, res) => {
+  try {
+    const league = req.params.league.toUpperCase();
+    const code = req.params.code.toUpperCase();
+    const period = req.query.period;
+
+    if (league === 'WORLD_CUP' || league === 'MLB') {
+      if (code === 'ALL') {
+        const trends = await sportsDAL.getLeagueTrendSnapshots(league, period || 'all');
+        res.json({ trends });
+      } else {
+        const trends = await sportsDAL.getTeamTrendSnapshot(league, code, period);
+        res.json({ trends });
+      }
+    } else {
+      const trends = await sportsDAL.getTeamTrends(league, code);
+      res.json({ trends });
+    }
+  } catch (e) {
+    console.error(`[Sports:Trends:${req.params.league}:${req.params.code}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Team Historical matches
+sportsRouter.get('/:league/teams/:code/historical', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const matches = await sportsDAL.getHistoricalMatches(req.params.league.toUpperCase(), req.params.code.toUpperCase(), limit);
+    res.json({ matches });
+  } catch (e) {
+    console.error(`[Sports:HistoricalMatches:${req.params.league}:${req.params.code}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Team Injuries
+sportsRouter.get('/:league/teams/:code/injuries', async (req, res) => {
+  try {
+    const injuries = await sportsDAL.getInjuryNews(req.params.league.toUpperCase(), req.params.code.toUpperCase());
+    res.json({ injuries });
+  } catch (e) {
+    console.error(`[Sports:Injuries:${req.params.league}:${req.params.code}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Match Lineup Projections
+sportsRouter.get('/:league/matches/:id/lineups', async (req, res) => {
+  try {
+    const lineups = await sportsDAL.getLineupProjections(req.params.league.toUpperCase(), req.params.id);
+    res.json({ lineups });
+  } catch (e) {
+    console.error(`[Sports:Lineups:${req.params.league}:${req.params.id}] Error:`, e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Mount sports and legacy routes
+app.use('/api/world-cup', (req, res, next) => {
+  req.url = req.url.replace('/', '/WORLD_CUP/');
+  next();
+}, sportsRouter);
+
+app.use('/api/sports', sportsRouter);
+
+
 // --- Intent Router API (Platform Module) ---
 // Any frontend can call these endpoints to get intelligent routing.
 // The router is decoupled from the proxy — it classifies intent and returns
@@ -1075,8 +1342,9 @@ app.post('/api/router/classify', async (req, res) => {
 // --- Gemini Chat Endpoint (direct API key, gemini-3.5-flash) ---
 mountChatRoute(app);
 
+
 // --- Data Table Agent Endpoint (grounded search + structured extraction) ---
-import { fetchDataTable } from './lib/data-table-agent.js';
+// Note: fetchDataTable is imported at the top of this file
 
 app.get('/api/data-table', async (req, res) => {
   const { query } = req.query;
@@ -1617,7 +1885,10 @@ app.use((err, req, res, next) => {
 async function shutdown(signal) {
   console.log(`\n[Server] ${signal} received. Shutting down gracefully...`);
   try {
-    await spannerDAL.closeSpanner();
+    await Promise.all([
+      spannerDAL.closeSpanner(),
+      wcDAL.closeWcSpanner(),
+    ]);
   } catch (e) {
     console.error('[Server] Error closing Spanner:', e.message);
   }

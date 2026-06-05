@@ -100,7 +100,37 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
   const isUser = msg.role === 'user';
   const [msgCopied, setMsgCopied] = useState(false);
 
-  // Error boundary: intercept raw API crash strings
+  // Hooks MUST be called unconditionally (before any early returns)
+  const handleCopyMessage = useCallback(() => {
+    navigator.clipboard.writeText(msg.content || '');
+    setMsgCopied(true);
+    setTimeout(() => setMsgCopied(false), 2000);
+  }, [msg.content]);
+
+  const renderedHtml = useMemo(() => {
+    if (isUser || !msg.content) return '';
+
+    const renderer = new marked.Renderer();
+    renderer.code = function (token: any, paramLang?: string) {
+      const codeText = typeof token === 'string' ? token : token.text;
+      const lang = (typeof token === 'string' ? paramLang : token.lang) || 'text';
+      return `<code-block-placeholder data-code="${encodeURIComponent(codeText)}" data-lang="${lang}"></code-block-placeholder>`;
+    };
+    renderer.link = function (token: any) {
+      const href = typeof token === 'string' ? token : token.href;
+      const text = typeof token === 'string' ? token : (token.text || href);
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    };
+
+    const rawMarkup = marked.parse(msg.content, { renderer, gfm: true, breaks: true }) as string;
+
+    return DOMPurify.sanitize(rawMarkup, {
+      ADD_TAGS: ['code-block-placeholder'],
+      ADD_ATTR: ['data-code', 'data-lang', 'target', 'rel']
+    });
+  }, [msg.content, isUser]);
+
+  // Error boundary: intercept raw API crash strings (AFTER hooks)
   const isFatalError = !isUser && typeof msg.content === 'string' && (
     msg.content.includes('"status":"INVALID_ARGUMENT"') ||
     msg.content.includes('INVALID_ARGUMENT') ||
@@ -130,35 +160,6 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
       </motion.div>
     );
   }
-
-  const handleCopyMessage = useCallback(() => {
-    navigator.clipboard.writeText(msg.content || '');
-    setMsgCopied(true);
-    setTimeout(() => setMsgCopied(false), 2000);
-  }, [msg.content]);
-
-  const renderedHtml = useMemo(() => {
-    if (isUser || !msg.content) return '';
-
-    const renderer = new marked.Renderer();
-    renderer.code = function (token: any, paramLang?: string) {
-      const codeText = typeof token === 'string' ? token : token.text;
-      const lang = (typeof token === 'string' ? paramLang : token.lang) || 'text';
-      return `<code-block-placeholder data-code="${encodeURIComponent(codeText)}" data-lang="${lang}"></code-block-placeholder>`;
-    };
-    renderer.link = function (token: any) {
-      const href = typeof token === 'string' ? token : token.href;
-      const text = typeof token === 'string' ? token : (token.text || href);
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    };
-
-    const rawMarkup = marked.parse(msg.content, { renderer, gfm: true, breaks: true }) as string;
-
-    return DOMPurify.sanitize(rawMarkup, {
-      ADD_TAGS: ['code-block-placeholder'],
-      ADD_ATTR: ['data-code', 'data-lang', 'target', 'rel']
-    });
-  }, [msg.content, isUser]);
 
   const renderContent = () => {
     if (isUser) {

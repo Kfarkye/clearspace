@@ -2,6 +2,7 @@ import './vertex-ai-proxy-interceptor.js';
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -27,8 +28,10 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-        <App />
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
       </GoogleOAuthProvider>
     </ErrorBoundary>
   </React.StrictMode>

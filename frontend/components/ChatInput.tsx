@@ -20,6 +20,7 @@ const THINKING_OPTIONS: { key: ThinkingMode; label: string; description: string 
   { key: 'fast', label: 'Fast', description: 'No reasoning, fastest responses' },
   { key: 'balanced', label: 'Normal', description: 'Moderate reasoning depth' },
   { key: 'deep', label: 'Deep Think', description: 'Maximum reasoning for complex analysis' },
+  { key: 'web', label: 'Web', description: 'Google Search grounded, no tools' },
 ];
 
 export const ChatInput: React.FC<ChatInputProps> = ({

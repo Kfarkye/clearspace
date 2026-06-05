@@ -1,67 +1,117 @@
-import { ApiClient } from './apiClient';
+/**
+ * @file frontend/services/espnService.ts
+ * @description Unified Sports Service
+ * Bridges the frontend directly to the backend's @clearspace/sports-core intelligence layer.
+ * 
+ * ARCHITECTURE NOTE:
+ * - Intelligence endpoints (POST /api/intelligence/sports/*) route through
+ *   the backend's production handlers with caching, Kalshi/Polymarket fusion,
+ *   and injury data enrichment.
+ * - Raw API fallbacks (GET /api-proxy/espn/*) are used for event-specific
+ *   deep-dives (game detail, play-by-play) that need ESPN event IDs.
+ */
 
-const TOOL_TIMEOUT_MS = 10000;
+export interface SportsServiceOptions {
+  signal?: AbortSignal;
+}
+
+class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
 
 /**
- * ESPN-specific fetch logic.
- * Uses the backend proxy for all ESPN data access.
+ * Core fetch wrapper with standard error handling and abort support.
  */
+async function fetchApi<T>(url: string, options?: SportsServiceOptions & { method?: string; body?: any }): Promise<T> {
+  try {
+    const fetchOptions: RequestInit = { signal: options?.signal };
+    if (options?.method === 'POST') {
+      fetchOptions.method = 'POST';
+      fetchOptions.headers = { 'Content-Type': 'application/json' };
+      fetchOptions.body = JSON.stringify(options.body);
+    }
+    const res = await fetch(url, fetchOptions);
+    if (!res.ok) {
+      throw new ApiError(res.status, `API returned ${res.status}: ${res.statusText}`);
+    }
+    return (await res.json()) as T;
+  } catch (error: any) {
+    if (error.name === 'AbortError') throw error;
+    console.error(`[espnService] Fetch failed for ${url}:`, error.message);
+    throw error;
+  }
+}
+
 export const espnService = {
-  /**
-   * Fetches the scoreboard for a given sport via the backend proxy.
-   * Returns site API data enriched with core API odds and win probability.
-   */
-  getScoreboard: async (sport: string, date?: string) => {
-    return ApiClient.sports.getScoreboard(sport, date);
-  },
+  // ==========================================================================
+  // 1. UNIFIED INTELLIGENCE ENDPOINTS (Powered by backend handlers)
+  // ==========================================================================
 
   /**
-   * Deep-dive into a specific ESPN event via the core API.
-   * Returns detailed odds, win probability, and team stats.
+   * Replaces the old raw scoreboard fetch. This hits `sports-handler.js` on the backend,
+   * returning data enriched with Kalshi, Polymarket, injuries, and standings.
    */
-  getEventDetail: async (sport: string, eventId: string) => {
-    const response = await fetch(`/api-proxy/espn/${sport}/event/${eventId}`, {
-      headers: { 'X-App-Proxy': import.meta.env.VITE_PROXY_HEADER || '' },
-      signal: AbortSignal.timeout(TOOL_TIMEOUT_MS),
+  getScoreboard: async (sport: string, date?: string, team?: string, options?: SportsServiceOptions) => {
+    return fetchApi<any>('/api/intelligence/sports/query', {
+      ...options,
+      method: 'POST',
+      body: { league: sport, date, team, include_odds: true },
     });
-
-    if (!response.ok) {
-      throw new Error(`ESPN Core API returned ${response.status}`);
-    }
-    return response.json();
   },
 
   /**
-   * Fetches play-by-play data for a specific game.
-   * Returns game situation (count, baserunners, batter/pitcher), recent plays, and leaders.
+   * Fetches win probability timeline from `win-probability-handler.js`.
    */
-  getPlayByPlay: async (sport: string, eventId: string) => {
-    const response = await fetch(`/api-proxy/espn/${sport}/event/${eventId}/plays`, {
-      headers: { 'X-App-Proxy': import.meta.env.VITE_PROXY_HEADER || '' },
-      signal: AbortSignal.timeout(TOOL_TIMEOUT_MS),
+  getWinProbability: async (league: string, team: string, options?: SportsServiceOptions) => {
+    return fetchApi<any>('/api/intelligence/sports/win-probability', {
+      ...options,
+      method: 'POST',
+      body: { league, team },
     });
-
-    if (!response.ok) {
-      throw new Error(`ESPN play-by-play returned ${response.status}`);
-    }
-    return response.json();
   },
 
   /**
-   * Fetches live multi-book odds from The Odds API.
-   * Returns null if the API key is not configured.
+   * Fetches live stats fused with PrizePicks from `player-prop-handler.js`.
    */
-  getLiveOdds: async (sport: string) => {
+  getPlayerProps: async (league: string, team: string, options?: SportsServiceOptions) => {
+    return fetchApi<any>('/api/intelligence/sports/player-props', {
+      ...options,
+      method: 'POST',
+      body: { league, team },
+    });
+  },
+
+  /**
+   * Triggers the 2-pass Gemini pipeline in `data-table-agent.js` for standings/records.
+   */
+  getDataTable: async (query: string, options?: SportsServiceOptions) => {
+    return fetchApi<any>('/api/intelligence/sports/data-table', {
+      ...options,
+      method: 'POST',
+      body: { query },
+    });
+  },
+
+  // ==========================================================================
+  // 2. RAW API FALLBACKS (Used for specific deep-dives like get_play_by_play)
+  // ==========================================================================
+
+  getEventDetail: async (sport: string, eventId: string, options?: SportsServiceOptions) => {
+    if (!eventId) throw new Error('eventId is required');
+    return fetchApi<any>(`/api-proxy/espn/${sport}/event/${eventId}`, options);
+  },
+
+  getPlayByPlay: async (sport: string, eventId: string, options?: SportsServiceOptions) => {
+    if (!eventId) throw new Error('eventId is required');
+    return fetchApi<any>(`/api-proxy/espn/${sport}/event/${eventId}/plays`, options);
+  },
+
+  getLiveOdds: async (sport: string, options?: SportsServiceOptions) => {
     try {
-      const response = await fetch(`/api-proxy/odds/${sport}`, {
-        headers: { 'X-App-Proxy': import.meta.env.VITE_PROXY_HEADER || '' },
-        signal: AbortSignal.timeout(TOOL_TIMEOUT_MS),
-      });
-
-      if (!response.ok) return null;
-      const data = await response.json();
-      if (!data.configured) return null;
-      return data;
+      return await fetchApi<any>(`/api-proxy/odds/${sport}`, options);
     } catch {
       return null;
     }

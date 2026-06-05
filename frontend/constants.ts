@@ -143,20 +143,33 @@ Your code must be production-ready. Do not just fulfill the request; produce cod
 
 // --- Shared Sports Configuration (used by both modes) ---
 
-const SPORTS_TOOLS = `SPORTS TOOL
-- get_sports_data: LIVE ESPN scores, schedules, odds, game details, and play-by-play. Always use for sports queries.
-  Parameters:
-  - sport (required): mlb, nfl, nba, nhl, wnba, mls, epl, liga, ucl, cfb, cbb
-  - date (optional): YYYYMMDD format. Omit for today.
-  - event_id (optional): ESPN event ID for deep-dive. Get from thread context or previous scoreboard.
-  - include_play_by_play (optional): true to get game situation, recent plays, current batter/pitcher. Only with event_id.
+const SPORTS_TOOLS = `SPORTS TOOLS (focused tools — use the right one)
+- get_scoreboard: Today's games for a league. Scores, records, broadcast, DraftKings odds, event IDs. DEFAULT tool for any sports query.
+  Parameters: sport (required), date (optional YYYYMMDD), team (optional — filters to that team's game only)
+- get_game_detail: Deep-dive into ONE specific game by event ID. Full odds, win probability, team stats, starting lineups.
+  Parameters: sport (required), event_id (required — get from previous get_scoreboard response)
+- get_play_by_play: Live game situation for an IN-PROGRESS game. Count, baserunners, batter/pitcher, recent plays.
+  Parameters: sport (required), event_id (required — get from previous get_scoreboard response)
+- get_live_odds: Multi-book odds comparison (DraftKings, FanDuel, BetMGM, etc.) for a league. Use when user wants to shop lines.
+  Parameters: sport (required)
+- get_world_cup_trends: Fetches calculated historical betting trends (win rate, goals averages, clean sheets, over 2.5 rate, BTTS rate, and recent form strings) for a qualified World Cup team from our verified database.
+  Parameters: team (required)
+- get_world_cup_historical_matches: Retrieves the chronological list of recent historical matches played by a qualified World Cup team (including scores, opponent, and result) from our verified database.
+  Parameters: team (required)
+- get_mlb_trends: Fetches calculated historical betting trends (win rate, runs averages, shutout rate, over 8.5 rate, BTTS rate, and recent form strings) for a specific MLB team or all teams from our verified database.
+  Parameters: team (required)
+- get_mlb_historical_matches: Retrieves the chronological list of recent historical matches played by an MLB team (including runs, opponent, and result) from our verified database.
+  Parameters: team (required)
 
-SPORTS TOOL USAGE
-- Date provided ("yesterday", "June 1st") → parse to YYYYMMDD.
-- No date ("today", "how did the Knicks do?") → omit date parameter.
-- Supported: mlb, nfl, nba, nhl, wnba, mls, epl, liga, ucl, cfb, cbb.
-- Deep-dive: When the user asks for more detail on a specific game, use event_id with include_play_by_play: true.
-- The scoreboard response includes a predictor field (win probability) when available. Display as "Win Probability: [home team] [pct]% / [away team] [pct]%".`;
+SPORTS TOOL ROUTING (STRICT DATABASE FIRST):
+1. LIVE TRACKING & SCORES: If a user asks to "track" a specific game, check a live score, or monitor a live event/bet status, use \`get_scoreboard\`. DO NOT use this tool for general betting recommendations, value bets, or macro betting queries (e.g., "best mlb bets").
+2. TRENDS & NEW BETS: Use \`get_betting_trends\` for general/non-database macro betting queries, historical records, value bets, or betting angles not covered by the World Cup or MLB verified databases.
+3. STANDINGS & RECORDS (CRITICAL): If the user asks for "standings", a "table", "sheet", or full list of team records, you MUST use \`get_league_standings\`. DO NOT use the sports query tool for standings.
+4. WORLD CUP HISTORICAL DATA & TRENDS: If the user asks about a qualified World Cup team's historical performance, averages, recent match logs, over/under rates, clean-sheet rates, win rates, or trends, you MUST use \`get_world_cup_trends\` or \`get_world_cup_historical_matches\` to retrieve the data from our verified database. Always supply the canonical 3-letter team code (e.g. USA, MEX, ESP, ARG, BRA, FRA, GER).
+5. MLB HISTORICAL DATA & TRENDS (CRITICAL): If the user asks about an MLB team's historical performance, averages, recent match logs, over/under rates, shutout rates, win rates, or trends, or asks for general "best mlb bets", you MUST use \`get_mlb_trends\` or \`get_mlb_historical_matches\` to retrieve the data from our verified database. For a general query like "best mlb bets", call \`get_mlb_trends\` with team = "all" and period = "all". Always supply the canonical 3-letter team abbreviation (e.g. NYY, LAD, BOS, CHC, SF).
+6. DATABASE FIRST: You MUST use the database-backed tools (get_world_cup_trends, get_world_cup_historical_matches, get_mlb_trends, get_mlb_historical_matches) immediately for any historical data, match logs, or trends related to qualified World Cup teams or MLB teams. DO NOT perform a Google Search first for these queries.
+
+When database-backed tools return a DATA_TABLE artifact, render it using a \`\`\`datatable code block containing the title, columns, and rows.`;
 
 const SPORTS_OUTPUT_FORMAT = `SPORTS FORMATTING
 - Open with context: "[Sport] games for [date]. Local time: [user's current time and timezone]."
@@ -323,7 +336,10 @@ ${CODE_QUALITY_RULES}
 ${QUALITY_RULES}
 
 TOOLS
-- get_sports_data: LIVE ESPN scores, schedules, odds, game details, and play-by-play. Always use for sports queries.
+- get_scoreboard: Today's games for a league — scores, records, broadcast, DraftKings odds. DEFAULT for any sports query.
+- get_game_detail: Deep-dive into a specific game by event ID — full odds, win probability, team stats.
+- get_play_by_play: Live game situation for in-progress games — count, baserunners, recent plays.
+- get_live_odds: Multi-book odds comparison (DraftKings, FanDuel, BetMGM, etc.) for a league.
 - get_workspace_context: Emails, calendar events, and tasks from Google Workspace. Supports custom Gmail queries (email_query), pagination (page_token), and adjustable result count (max_results).
 
 CONTEXTUAL FOLLOW-UPS (CRITICAL):
@@ -331,6 +347,14 @@ When the user uses pronouns ("this", "that", "it") or asks a follow-up about the
 
 INFORMATION GAPS:
 If a follow-up question cannot be answered from data in the chat history, use Google Search grounding or re-trigger the original tool. Do NOT guess, and do NOT search the user's personal Google Workspace for public knowledge.
+
+MANDATORY FALLBACK — NEVER SURFACE EMPTY RESULTS:
+You have access to BOTH custom tools AND Google Search. If ANY tool call returns empty data, an error, "no results", or a resolution_state of "ERROR":
+1. DO NOT tell the user "no data available" or "the query returned empty". That is a system failure, not a user-facing response.
+2. IMMEDIATELY use Google Search to fulfill the user's original request with live web data.
+3. If Google Search also fails, use your own training knowledge to provide the best possible answer, clearly noting it may not be current.
+4. The user should NEVER see a message about a tool failing. They should see the answer to their question.
+This rule applies to ALL tools: sports, World Cup, workspace, YouTube, and any future tools. No exceptions.
 
 WORKSPACE ISOLATION:
 NEVER use workspace tools (get_workspace_context, read_email, list_drive_files) to answer questions about public knowledge, licenses, regulations, sports, or vague terms like "slowdowns", "delays", or "status" unless the user EXPLICITLY references their personal emails, calendar, or documents.

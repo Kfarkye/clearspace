@@ -10,6 +10,7 @@ import { handleSportsQuery } from './sports-handler.js';
 import { handleWinProbabilityQuery } from './win-probability-handler.js';
 import { handlePlayerPropQuery } from './player-prop-handler.js';
 import { fetchDataTable } from './data-table-agent.js';
+import * as sportsDAL from './sports-dal.js';
 import {
   fetchAtsRecord, fetchOuRecord, fetchRunlineRecord,
   fetchMoneylineRecord, applyAtsFilters, generateBettingAngles,
@@ -70,12 +71,30 @@ async function searchYouTubeCached(query) {
   return videos;
 }
 
+// ── $ref Bomb Defuser ─────────────────────────────────────────────────────
+// ESPN's Hypermedia API returns `$ref` keys with internal URLs.
+// Vertex AI's strict OpenAPI schema parser treats `$ref` as a reserved keyword
+// and crashes with INVALID_ARGUMENT (400) when it encounters them.
+
+const sanitizeForGemini = (obj) => {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeForGemini);
+
+  const clean = {};
+  for (const [key, value] of Object.entries(obj)) {
+    // Strip poisonous schema keywords that crash Vertex AI
+    if (key === '$ref' || key === 'href' || key === 'uid' || key === 'links') continue;
+    clean[key] = sanitizeForGemini(value);
+  }
+  return clean;
+};
+
 // ── Tool Declarations (Semantic Guardrails Applied) ───────────────────────
 
 const sportsToolDeclaration = {
   name: 'delegate_sports_query',
-  // CRITICAL FIX: Explicitly map "track", "live", and "bet status" to this tool
-  description: 'Fetches live scoreboards, game status, and scheduled sports data. CRITICAL: Use this tool whenever a user asks to TRACK a game, monitor a live event, check a live score, or check the status of a game they placed a bet on.',
+  // CRITICAL FIX: Negative constraint against tables and standings
+  description: 'Fetches live scoreboards, game status, and scheduled sports data. CRITICAL: Use this tool whenever a user asks to TRACK a game, monitor a live event, check a live score, or check a bet. DO NOT use this tool if the user asks for a "table", "sheet", full league "standings", or a full list of team records.',
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -130,14 +149,79 @@ const bettingTrendsToolDeclaration = {
 
 const dataTableToolDeclaration = {
   name: 'generate_data_table',
-  description: 'Generates a structured data table, ranking, or comparison sheet from grounded search data. Use when the user asks for a table, chart, sheet, ranking, or any tabular data view.',
+  // CRITICAL FIX: Explicitly map "standings" and "records" here
+  description: 'Generates a structured data table, ranking, or comparison sheet from grounded search data. CRITICAL: You MUST use this tool IMMEDIATELY if the user asks for a "table", "sheet", "ranking", "standings", or a list of team records (e.g., "table sheet of all 30 teams record").',
   parameters: {
     type: Type.OBJECT,
     properties: {
-      query: { type: Type.STRING, description: "The user's table/chart request, e.g. 'all 30 MLB teams by win percentage'" },
+      query: { type: Type.STRING, description: "The exact search query to build the table, e.g. 'Current MLB standings and records for all 30 teams'" },
     },
     required: ['query'],
   },
+};
+
+const standingsToolDeclaration = {
+  name: 'get_league_standings',
+  description: 'Generates a data table of current league standings, win/loss records, and rankings. CRITICAL: Use this ANY TIME a user asks for "standings", "rankings", or "team records".',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      league: { type: Type.STRING, description: 'Sports league, e.g., MLB, NBA, NFL, NHL' }
+    },
+    required: ['league'],
+  },
+};
+
+const worldCupTrendsToolDeclaration = {
+  name: 'get_world_cup_trends',
+  description: 'Fetches calculated historical betting trends (win rate, goals averages, clean sheets, over 2.5 rate, BTTS rate, and recent form strings) for a qualified World Cup team from our verified database.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      team: { type: Type.STRING, description: 'Canonical 3-letter team code (e.g. USA, MEX, ESP, ARG, BRA, FRA, GER)' },
+      period: { type: Type.STRING, description: "Period of trend snapshots: 'last_10', 'last_20', or 'all'. Defaults to 'all'." }
+    },
+    required: ['team']
+  }
+};
+
+const worldCupHistoricalMatchesToolDeclaration = {
+  name: 'get_world_cup_historical_matches',
+  description: 'Retrieves the chronological list of recent historical matches played by a qualified World Cup team (including scores, opponent, and result) from our verified database.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      team: { type: Type.STRING, description: 'Canonical 3-letter team code (e.g. USA, MEX, ESP, ARG, BRA, FRA, GER)' },
+      limit: { type: Type.INTEGER, description: 'Maximum number of match records to retrieve. Defaults to 20.' }
+    },
+    required: ['team']
+  }
+};
+
+const mlbTrendsToolDeclaration = {
+  name: 'get_mlb_trends',
+  description: 'Fetches calculated historical betting trends (win rate, runs averages, shutout rate, over 8.5 rate, BTTS rate, and recent form strings) for a specific MLB team or all teams from our verified database.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      team: { type: Type.STRING, description: 'Canonical 3-letter team abbreviation (e.g. NYY, LAD, BOS, CHC, SF) or "all" to retrieve trends for all 30 teams.' },
+      period: { type: Type.STRING, description: "Period of trend snapshots: 'last_10', 'last_20', or 'all'. Defaults to 'all'." }
+    },
+    required: ['team']
+  }
+};
+
+const mlbHistoricalMatchesToolDeclaration = {
+  name: 'get_mlb_historical_matches',
+  description: 'Retrieves the chronological list of recent historical matches played by an MLB team (including runs, opponent, and result) from our verified database.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      team: { type: Type.STRING, description: 'Canonical 3-letter team abbreviation (e.g. NYY, LAD, BOS, CHC, SF)' },
+      limit: { type: Type.INTEGER, description: 'Maximum number of match records to retrieve. Defaults to 20.' }
+    },
+    required: ['team']
+  }
 };
 
 // ── System Prompt ─────────────────────────────────────────────────────────
@@ -156,8 +240,13 @@ function buildSystemPrompt() {
 TEMPORAL CONTEXT: The current year is ${yearContext}. Target modern context. Current Date: ${dateContext}
 
 TOOL ROUTING PROTOCOL (STRICT):
-1. LIVE TRACKING & SCORES: If a user asks to "track" a game, "check my bet", monitor an ongoing game, or check a live score, you MUST use \`delegate_sports_query\`.
-2. TRENDS & NEW BETS: Use \`get_betting_trends\` ONLY when asked for historical records (ATS, O/U) or to find new value bets. Do NOT use it for live game tracking.
+1. LIVE TRACKING & SCORES: If a user asks to "track" a specific game, check a live score, or monitor a live event/bet status, use \`delegate_sports_query\`. DO NOT use this tool for general betting recommendations, value bets, or macro betting queries (e.g., "best mlb bets").
+2. TRENDS & NEW BETS: Use \`get_betting_trends\` for general/non-database macro betting queries, historical records, value bets, or betting angles not covered by the World Cup or MLB verified databases.
+3. STANDINGS & RECORDS (CRITICAL): If the user asks for "standings", a "table", "sheet", or full list of team records, you MUST use \`get_league_standings\`. DO NOT use the sports query tool for standings.
+4. WORLD CUP HISTORICAL DATA & TRENDS: If the user asks about a qualified World Cup team's historical performance, averages, recent match logs, over/under rates, clean-sheet rates, win rates, or trends, you MUST use \`get_world_cup_trends\` or \`get_world_cup_historical_matches\` to retrieve the data from our verified database. Always supply the canonical 3-letter team code (e.g. USA, MEX, ESP, ARG, BRA, FRA, GER).
+5. MLB HISTORICAL DATA & TRENDS (CRITICAL): If the user asks about an MLB team's historical performance, averages, recent match logs, over/under rates, shutout rates, win rates, or trends, or asks for general "best mlb bets", you MUST use \`get_mlb_trends\` or \`get_mlb_historical_matches\` to retrieve the data from our verified database. For a general query like "best mlb bets", call \`get_mlb_trends\` with team = "all" and period = "all". Always supply the canonical 3-letter team abbreviation (e.g. NYY, LAD, BOS, CHC, SF).
+6. DATABASE FIRST: You MUST use the database-backed tools (get_world_cup_trends, get_world_cup_historical_matches, get_mlb_trends, get_mlb_historical_matches) immediately for any historical data, match logs, or trends related to qualified World Cup teams or MLB teams. DO NOT perform a Google Search first for these queries.
+
 
 When the user asks for sports data you MUST extract parameters in canonical format and trigger the appropriate tool.
 If a temporal context is clearly provided (like "yesterday", "last week", or a specific date), parse it to YYYYMMDD format exactly. If no temporal context is provided, DO NOT provide a date parameter. Let the tool default to live data.
@@ -175,6 +264,12 @@ When asked for highlights or videos, output a JSON code block with language "you
 \`\`\`youtube_media
 { "query": "search terms here" }
 \`\`\`
+
+CAPABILITY BOUNDARIES (STRICT):
+- You have access to live scores, situations, and basic odds via \`delegate_sports_query\`.
+- You DO NOT currently have access to granular MLB Statcast data, pitch velocity, or live pitch counts.
+- If a user asks for granular pitch data or velocity, DO NOT attempt to call a tool. Gracefully inform them that live pitch-tracking telemetry is currently offline, and pivot to offering live matchup analysis or betting angles instead.
+- If a user asks about a specific team, you MUST pass that EXACT team name to the tool. If the tool returns no data for that team, do NOT substitute another team. State clearly that the team is not playing.
 
 VOICE: Punchy. Efficient. Zero fluff. Lead with the finding that changes the decision.
 Banned: leverage, optimize, streamline, unlock, elevate, holistic, robust, actionable, deep dive, seamless.`;
@@ -219,10 +314,9 @@ function getAiClient() {
       aiClient = new GoogleGenAI({ apiKey });
     } else {
       aiClient = new GoogleGenAI({
-        vertexai: {
-          project: process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0281999829',
-          location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-        }
+        vertexai: true,
+        project: process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0281999829',
+        location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
       });
     }
   }
@@ -253,7 +347,18 @@ export async function processIntent(message, history, signal) {
         config: {
           systemInstruction: buildSystemPrompt(),
           tools: [
-            { functionDeclarations: [sportsToolDeclaration, winProbabilityToolDeclaration, playerPropToolDeclaration, bettingTrendsToolDeclaration, dataTableToolDeclaration] },
+            { functionDeclarations: [
+                sportsToolDeclaration,
+                winProbabilityToolDeclaration,
+                playerPropToolDeclaration,
+                bettingTrendsToolDeclaration,
+                dataTableToolDeclaration,
+                standingsToolDeclaration,
+                worldCupTrendsToolDeclaration,
+                worldCupHistoricalMatchesToolDeclaration,
+                mlbTrendsToolDeclaration,
+                mlbHistoricalMatchesToolDeclaration
+            ] },
             { googleSearch: {} },
           ],
           temperature: 0.7,
@@ -279,7 +384,7 @@ export async function processIntent(message, history, signal) {
       try {
         switch (call.name) {
           case 'delegate_sports_query':
-            return await handleSportsQuery(call.args);
+            return sanitizeForGemini(await handleSportsQuery(call.args));
           case 'get_win_probability':
             return await handleWinProbabilityQuery(call.args);
           case 'get_player_props':
@@ -289,6 +394,18 @@ export async function processIntent(message, history, signal) {
               id: randomUUID(), type: 'DATA_TABLE', resolution_state: 'RESOLVED',
               context_summary: 'Data Table', data: await fetchDataTable(call.args?.query),
             };
+
+          case 'get_league_standings': {
+            const { league } = call.args || {};
+            const safeLeague = (league || 'sports').toUpperCase();
+            const queryStr = `Current ${safeLeague} regular season standings, win-loss records, and team rankings`;
+            console.log(`[CHAT] Bridge Tool Triggered: Routing ${safeLeague} Standings to DataTable Agent.`);
+            return {
+              id: randomUUID(), type: 'DATA_TABLE', resolution_state: 'RESOLVED',
+              context_summary: `${safeLeague} Standings`,
+              data: await fetchDataTable(queryStr),
+            };
+          }
 
           case 'get_betting_trends': {
             const { team, trend_type } = call.args || {};
@@ -315,6 +432,172 @@ export async function processIntent(message, history, signal) {
               id: randomUUID(), type: 'BETTING_TRENDS', resolution_state: 'RESOLVED',
               context_summary: `${team && team !== 'all' ? team.toUpperCase() : 'League-Wide'} Betting Trends`,
               data: { ...trendData, ...(angles ? { best_bets: angles.angles, analysis_markdown: angles.analysis_markdown } : {}) },
+            };
+          }
+
+          case 'get_world_cup_trends': {
+            const { team, period } = call.args || {};
+            const safeTeam = String(team).trim().toUpperCase();
+            const safePeriod = period || 'all';
+            const trends = await sportsDAL.getTeamTrendSnapshot('WORLD_CUP', safeTeam, safePeriod);
+            
+            const columns = ['Period', 'Win Rate', 'Goals For Avg', 'Goals Against Avg', 'Clean Sheets', 'Over 2.5', 'BTTS', 'Form 5', 'Form 10'];
+            const rows = [];
+            const trendsList = Array.isArray(trends) ? trends : [trends].filter(Boolean);
+            
+            for (const t of trendsList) {
+              rows.push([
+                t.period || 'all',
+                t.winRate != null ? `${(t.winRate * 100).toFixed(1)}%` : '-',
+                t.goalsForAvg != null ? Number(t.goalsForAvg).toFixed(2) : '-',
+                t.goalsAgainstAvg != null ? Number(t.goalsAgainstAvg).toFixed(2) : '-',
+                t.cleanSheetRate != null ? `${(t.cleanSheetRate * 100).toFixed(1)}%` : '-',
+                t.over25Rate != null ? `${(t.over25Rate * 100).toFixed(1)}%` : '-',
+                t.bttsRate != null ? `${(t.bttsRate * 100).toFixed(1)}%` : '-',
+                t.form5 || '-',
+                t.form10 || '-'
+              ]);
+            }
+            
+            return {
+              id: randomUUID(),
+              type: 'DATA_TABLE',
+              resolution_state: 'RESOLVED',
+              context_summary: `${safeTeam} World Cup Snapshot`,
+              data: {
+                title: `${safeTeam} World Cup Ingestion Snapshot`,
+                columns,
+                rows,
+                source: 'ESPN Historical Ingestion',
+              }
+            };
+          }
+
+          case 'get_world_cup_historical_matches': {
+            const { team, limit } = call.args || {};
+            const safeTeam = String(team).trim().toUpperCase();
+            const safeLimit = limit ? parseInt(String(limit), 10) : 20;
+            const matches = await sportsDAL.getHistoricalMatches('WORLD_CUP', safeTeam, safeLimit);
+            
+            const columns = ['Date', 'Opponent', 'Result', 'Score', 'Venue', 'Competition'];
+            const rows = [];
+            
+            for (const m of matches) {
+              const dateStr = new Date(m.matchDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              rows.push([
+                dateStr,
+                m.opponentCode || 'UNK',
+                m.result || 'D',
+                `${m.goalsFor} - ${m.goalsAgainst}`,
+                m.venueType || 'neutral',
+                m.competition || 'Unknown'
+              ]);
+            }
+            
+            return {
+              id: randomUUID(),
+              type: 'DATA_TABLE',
+              resolution_state: 'RESOLVED',
+              context_summary: `${safeTeam} Historical matches`,
+              data: {
+                title: `${safeTeam} Historical Results Ledger (Last ${safeLimit} matches)`,
+                columns,
+                rows,
+                source: 'ESPN Results',
+              }
+            };
+          }
+
+          case 'get_mlb_trends': {
+            const { team, period } = call.args || {};
+            const safePeriod = period || 'all';
+            let rows = [];
+            const columns = ['Team', 'Period', 'Win Rate', 'Runs For Avg', 'Runs Against Avg', 'Shutout Rate', 'Over 8.5 Rate', 'BTTS Rate', 'Form 5', 'Form 10'];
+
+            if (team && team !== 'all') {
+              const safeTeam = String(team).trim().toUpperCase();
+              const trends = await sportsDAL.getTeamTrendSnapshot('MLB', safeTeam, safePeriod);
+              const trendsList = Array.isArray(trends) ? trends : [trends].filter(Boolean);
+              
+              for (const t of trendsList) {
+                rows.push([
+                  safeTeam,
+                  t.period || 'all',
+                  t.winRate != null ? `${(t.winRate * 100).toFixed(1)}%` : '-',
+                  t.goalsForAvg != null ? Number(t.goalsForAvg).toFixed(2) : '-',
+                  t.goalsAgainstAvg != null ? Number(t.goalsAgainstAvg).toFixed(2) : '-',
+                  t.cleanSheetRate != null ? `${(t.cleanSheetRate * 100).toFixed(1)}%` : '-',
+                  t.over25Rate != null ? `${(t.over25Rate * 100).toFixed(1)}%` : '-',
+                  t.bttsRate != null ? `${(t.bttsRate * 100).toFixed(1)}%` : '-',
+                  t.form5 || '-',
+                  t.form10 || '-'
+                ]);
+              }
+            } else {
+              const trends = await sportsDAL.getLeagueTrendSnapshots('MLB', safePeriod);
+              for (const t of trends) {
+                rows.push([
+                  t.teamCode,
+                  t.period || 'all',
+                  t.winRate != null ? `${(t.winRate * 100).toFixed(1)}%` : '-',
+                  t.goalsForAvg != null ? Number(t.goalsForAvg).toFixed(2) : '-',
+                  t.goalsAgainstAvg != null ? Number(t.goalsAgainstAvg).toFixed(2) : '-',
+                  t.cleanSheetRate != null ? `${(t.cleanSheetRate * 100).toFixed(1)}%` : '-',
+                  t.over25Rate != null ? `${(t.over25Rate * 100).toFixed(1)}%` : '-',
+                  t.bttsRate != null ? `${(t.bttsRate * 100).toFixed(1)}%` : '-',
+                  t.form5 || '-',
+                  t.form10 || '-'
+                ]);
+              }
+            }
+
+            return {
+              id: randomUUID(),
+              type: 'DATA_TABLE',
+              resolution_state: 'RESOLVED',
+              context_summary: team && team !== 'all' ? `${team.toUpperCase()} MLB Snapshot` : `MLB League-Wide Trends (${safePeriod})`,
+              data: {
+                title: team && team !== 'all' ? `${team.toUpperCase()} MLB Ingestion Snapshot` : `MLB League-Wide Historical Betting Trends (${safePeriod})`,
+                columns,
+                rows,
+                source: 'ESPN Results',
+              }
+            };
+          }
+
+          case 'get_mlb_historical_matches': {
+            const { team, limit } = call.args || {};
+            const safeTeam = String(team).trim().toUpperCase();
+            const safeLimit = limit ? parseInt(String(limit), 10) : 20;
+            const matches = await sportsDAL.getHistoricalMatches('MLB', safeTeam, safeLimit);
+            
+            const columns = ['Date', 'Opponent', 'Result', 'Runs Scored', 'Runs Against', 'Venue', 'Competition'];
+            const rows = [];
+            
+            for (const m of matches) {
+              const dateStr = new Date(m.matchDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              rows.push([
+                dateStr,
+                m.opponentCode || 'UNK',
+                m.result || 'D',
+                m.goalsFor != null ? m.goalsFor : '-',
+                m.goalsAgainst != null ? m.goalsAgainst : '-',
+                m.venueType || 'neutral',
+                m.competition || 'Unknown'
+              ]);
+            }
+            
+            return {
+              id: randomUUID(),
+              type: 'DATA_TABLE',
+              resolution_state: 'RESOLVED',
+              context_summary: `${safeTeam} MLB Historical Matches`,
+              data: {
+                title: `${safeTeam} MLB Historical Results Ledger (Last ${safeLimit} matches)`,
+                columns,
+                rows,
+                source: 'ESPN Results',
+              }
             };
           }
           default:
@@ -386,7 +669,9 @@ export function mountChatRoute(app) {
   app.post('/api/chat', async (req, res) => {
     const abortController = new AbortController();
     req.on('close', () => {
-      abortController.abort();
+      if (req.socket.destroyed || req.aborted) {
+        abortController.abort();
+      }
     });
 
     try {
@@ -394,9 +679,11 @@ export function mountChatRoute(app) {
       const message = sanitizeChatInput(rawMessage);
 
       if (!message) return res.status(400).json({ error: 'Message required' });
+      console.log(`[CHAT] Incoming query: "${message}"`);
 
       // Security: Block injection attempts
       if (BLOCKED_PATTERNS.some(p => p.test(message))) {
+        console.warn(`[CHAT] Query flagged by content filter: "${message}"`);
         return res.status(400).json({
           artifacts: [{
             id: randomUUID(), type: 'SYSTEM_MESSAGE', resolution_state: 'GROUNDING_FAULT',
@@ -422,7 +709,9 @@ export function mountChatRoute(app) {
       }
 
       // Execute Intent, passing the AbortSignal down the chain
+      console.log(`[CHAT] Executing processIntent for query: "${message}"...`);
       const artifacts = await processIntent(message, history, abortController.signal);
+      console.log(`[CHAT] processIntent completed, returned ${artifacts.length} artifacts.`);
 
       if (!res.headersSent && !abortController.signal.aborted) {
         res.json({ artifacts });

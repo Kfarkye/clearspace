@@ -1,6 +1,6 @@
 import { FunctionDeclaration, Type } from '@google/genai';
 import { ApiClient } from '../services/apiClient';
-import { espnService } from '../services/espnService';
+import { allSportsTools, dispatchSportsTool, SPORTS_TOOL_NAMES } from '../services/sportsDispatcher';
 import * as gmail from '../services/gmail';
 import * as drive from '../services/driveService';
 import { reviewDocument } from '../services/documentReviewService';
@@ -21,9 +21,14 @@ export const workspaceTool: FunctionDeclaration = {
       max_results: { type: Type.NUMBER, description: 'Number of emails to return. Default is 5. Use 10-20 when user asks to "show more".' },
       page_token: { type: Type.STRING, description: 'Pagination token from a previous response to fetch the next page of results.' },
       fetch_calendar: { type: Type.BOOLEAN, description: 'Set to true to fetch today\'s calendar events.' },
-      fetch_tasks: { type: Type.BOOLEAN, description: 'Set to true to fetch pending action items.' }
+      fetch_tasks: { type: Type.BOOLEAN, description: 'Set to true to fetch pending action items.' },
+      // 🛡️ POISON PILL: Forces the LLM to explicitly evaluate domain before execution
+      is_strictly_personal_data: {
+        type: Type.BOOLEAN,
+        description: 'CRITICAL DOMAIN GATE: You MUST set this to TRUE only if the user is asking about their personal emails, calendar, documents, or tasks. If the user is asking about sports (MLB, NBA, WNBA, NFL, NHL, MLS, scores, games, standings, Yankees, Braves, etc.), public knowledge, licenses, regulations, or any non-personal topic, you MUST set this to FALSE. Setting FALSE will block execution — use the correct domain tool instead.'
+      }
     },
-    required: ['fetch_emails', 'fetch_calendar', 'fetch_tasks']
+    required: ['fetch_emails', 'fetch_calendar', 'fetch_tasks', 'is_strictly_personal_data']
   }
 };
 
@@ -229,53 +234,87 @@ export const reviewDocumentTool: FunctionDeclaration = {
   }
 };
 
-// --- Sports ---
+// ── Sports Tools ────────────────────────────────────────────────────────────
+// All 9 sports tool declarations + dispatch logic are centralized in:
+// frontend/services/sportsDispatcher.ts
+// Tools: get_scoreboard, get_game_detail, get_play_by_play, get_live_odds,
+//        get_win_probability, get_player_props, get_betting_trends,
+//        generate_data_table, get_league_standings
 
-export const sportsTool: FunctionDeclaration = {
-  name: 'get_sports_data',
-  description: 'Fetches live scores, schedules, odds, game details, and play-by-play from ESPN for any major sport. Use this for ANY sports-related query. Supported sports: mlb, nfl, nba, nhl, wnba, mls, epl, liga, ucl, cfb, cbb.',
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      sport: {
-        type: Type.STRING,
-        description: 'The sport league key. Options: mlb, nfl, nba, nhl, wnba, mls, epl, liga, ucl, cfb, cbb'
-      },
-      date: {
-        type: Type.STRING,
-        description: 'Optional date in YYYYMMDD format. Omit for today\'s games.'
-      },
-      event_id: {
-        type: Type.STRING,
-        description: 'Optional specific ESPN event ID for deep-dive detail with full odds, win probability, and play-by-play. Use when the user asks for a deeper look at a specific game. Get the ID from thread context or a previous scoreboard call.'
-      },
-      include_play_by_play: {
-        type: Type.BOOLEAN,
-        description: 'Set to true to include play-by-play data (game situation, recent plays, current batter/pitcher). Only works with event_id. Use for deep-dive game analysis.'
-      },
-      team: {
-        type: Type.STRING,
-        description: 'Optional team name the user is asking about (e.g., "Braves", "Yankees", "Lakers"). Extract from the user\'s message to scope results to that team\'s game only.'
-      },
-    },
-    required: ['sport']
-  }
-};
+// ── World Cup 2026 Tools (Spanner: world-cup-db) ────────────────────────────
 
 export const worldCupTeamTool: FunctionDeclaration = {
   name: 'get_world_cup_team_profile',
-  description: 'Fetches World Cup 2026 team profiles, kits, apparel, tactical analysis, and history from TheDrip.to via headless scrape. Use when a user asks about a national soccer/football team\'s World Cup profile, their jerseys/kits, or team history. DO NOT use for live match scores (use get_sports_data instead).',
+  description: 'Fetches World Cup 2026 team profiles from our Spanner database (groups, FIFA ranking, confederation) AND TheDrip.to (kits, apparel, tactical analysis). Use when a user asks about a national soccer/football team\'s World Cup profile, their jerseys/kits, or team history. DO NOT use for live match scores (use get_scoreboard instead).',
   parameters: {
     type: Type.OBJECT,
     properties: {
       team: {
         type: Type.STRING,
-        description: 'The national team name, e.g., Brazil, France, United States'
+        description: 'The national team name or 3-letter code, e.g., "Brazil", "USA", "PAR"'
       },
     },
     required: ['team']
   }
 };
+
+export const worldCupGroupTool: FunctionDeclaration = {
+  name: 'get_world_cup_group',
+  description: 'Fetches a complete World Cup 2026 group snapshot from our Spanner database: all teams, matches, venues, odds, betting edges, and prediction market prices. Use when a user asks about a World Cup group, group standings, or "who is in Group D".',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      group: {
+        type: Type.STRING,
+        description: 'The group letter, e.g., "D", "A", "H"'
+      },
+    },
+    required: ['group']
+  }
+};
+
+export const worldCupScheduleTool: FunctionDeclaration = {
+  name: 'get_world_cup_schedule',
+  description: 'Fetches World Cup 2026 match schedule from our Spanner database. Can filter by group, team, or stage. Use when a user asks "when does USA play", "World Cup schedule", or "Group D matches".',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      group: {
+        type: Type.STRING,
+        description: 'Filter by group letter, e.g., "D"'
+      },
+      team: {
+        type: Type.STRING,
+        description: 'Filter by team code, e.g., "USA", "PAR", "AUS"'
+      },
+      stage: {
+        type: Type.STRING,
+        description: 'Filter by stage: "group", "round_of_32", "quarter", "semi", "final"'
+      },
+    },
+  }
+};
+
+export const worldCupEdgesTool: FunctionDeclaration = {
+  name: 'get_world_cup_edges',
+  description: 'Fetches World Cup 2026 betting edges from our Spanner database — computed as the difference between sportsbook odds (DraftKings, FanDuel) and prediction markets (Kalshi, Polymarket). Use when a user asks about "World Cup betting value", "edges", or "where are the best bets".',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      team: {
+        type: Type.STRING,
+        description: 'Filter edges by team code, e.g., "USA"'
+      },
+      minEdge: {
+        type: Type.NUMBER,
+        description: 'Minimum edge percentage to filter, e.g., 2.0'
+      },
+    },
+  }
+};
+
+export const allWorldCupTools = [worldCupTeamTool, worldCupGroupTool, worldCupScheduleTool, worldCupEdgesTool];
+
 
 export const youtubeSearchTool: FunctionDeclaration = {
   name: 'search_youtube',
@@ -324,6 +363,25 @@ export function useToolCalls(workspaceToken: string | null) {
       // === WORKSPACE: List emails, calendar, tasks ===
       if (call.name === 'get_workspace_context') {
         console.log("[Truth] Intercepted workspace tool call:", call.name, call.args);
+
+        // 🧱 DETERMINISTIC BOUNCER: Physical trap — blocks context bleed at execution layer
+        // P1 FIX: Regex restricted to unmistakable public sports entities only.
+        // Generic words (game, score, standings) removed to prevent false positives
+        // on personal queries like "kid's soccer game schedule" or "FICO credit score".
+        const SPORTS_BLEED_PATTERN = /\b(mlb|nba|wnba|mls|nhl|nfl|epl|ucl|liga|cfb|cbb|yankees|braves|dodgers|mets|astros|padres|cubs|phillies|rangers|orioles|guardians|twins|royals|tigers|rays|red\s?sox|white\s?sox|mariners|athletics|angels|rockies|pirates|reds|brewers|cardinals|diamondbacks|giants|nationals|marlins|lakers|celtics|knicks|warriors|nuggets|heat|bucks|suns|mavericks|thunder|timberwolves|clippers|cavaliers|nets|hawks|bulls|pacers|raptors|pistons|magic|hornets|spurs|pelicans|kings|blazers|jazz|grizzlies|rockets|wizards|sportsbook|draftkings|fanduel|espn\s?gamecast)\b/i;
+        const queryText = call.args?.email_query || '';
+        const isPoisonPillFalse = call.args?.is_strictly_personal_data === false;
+        const isSportsBleed = SPORTS_BLEED_PATTERN.test(queryText);
+
+        if (isPoisonPillFalse || isSportsBleed) {
+          console.warn(`[BOUNCER] 🛑 Intercepted Context Bleed: Blocked Workspace for non-personal query. PoisonPill=${call.args?.is_strictly_personal_data}, Query="${queryText}"`);
+          // P1 FIX: Return flat error object — useChat.ts wraps in { functionResponse: { name, response } }
+          // Returning a nested functionResponse here would cause double-wrapping and SDK validation failure.
+          return {
+            error: "CRITICAL ROUTING FAILURE: Domain violation. You attempted to search the user's private Workspace for public sports data. Pivot to 'get_scoreboard' for sports queries or Google Search for public knowledge immediately."
+          };
+        }
+
         requireAuth(workspaceToken);
 
         const emailOptions = call.args?.fetch_emails ? {
@@ -627,88 +685,273 @@ export function useToolCalls(workspaceToken: string | null) {
           _format_instruction: 'Present the improvements as a numbered list showing what was changed and why. Then render the enhanced HTML in a code block. Ask the user if they want to save to Drive or deploy.',
         };
 
-        // === SPORTS ===
-      } else if (call.name === 'get_sports_data') {
-        console.log("[Truth] Intercepted sports tool call:", call.name, call.args);
+        // ── SPORTS TOOLS (delegated to sportsDispatcher.ts) ────────────
+      } else if (SPORTS_TOOL_NAMES.has(call.name)) {
+        toolResult = await dispatchSportsTool(call, withTimeout);
 
-        const sport = call.args?.sport || 'mlb';
-        const date = call.args?.date;
-        const eventId = call.args?.event_id;
-        const includePlayByPlay = call.args?.include_play_by_play;
-        const team = call.args?.team;
-
-        if (eventId) {
-          const fetches: Promise<any>[] = [
-            espnService.getEventDetail(sport, eventId),
-          ];
-          if (includePlayByPlay) {
-            fetches.push(espnService.getPlayByPlay(sport, eventId));
-          }
-
-          const results = await withTimeout(Promise.all(fetches), 'ESPN Event Detail');
-          toolResult = {
-            ...results[0],
-            ...(results[1] ? { playByPlay: results[1] } : {}),
-          };
-        } else {
-          const scoreboard = await withTimeout(
-            espnService.getScoreboard(sport, date),
-            'ESPN Scoreboard'
-          );
-
-          // Context Envelope: If the user mentioned a specific team,
-          // filter the payload so the LLM ONLY sees that team's game.
-          // Prevents hallucination pivots to unrelated matchups.
-          if (team && scoreboard?.events) {
-            const searchTeam = team.toLowerCase().trim();
-            const filtered = scoreboard.events.filter((game: any) =>
-              JSON.stringify(game).toLowerCase().includes(searchTeam)
-            );
-            toolResult = {
-              ...scoreboard,
-              events: filtered,
-              _context_note: filtered.length === 0
-                ? `No games found matching '${team}'. Tell the user their team is not playing today.`
-                : `Filtered to ${filtered.length} game(s) matching '${team}'.`,
-            };
-          } else {
-            toolResult = scoreboard;
-          }
-        }
-
-      // === WORLD CUP TEAM PROFILE (Headless RAG via Jina) ===
+      // === WORLD CUP TEAM PROFILE (Spanner DB + TheDrip enrichment + Stats Aggregation) ===
       } else if (call.name === 'get_world_cup_team_profile') {
         console.log('[Truth] Intercepted WC team profile tool call:', call.args);
         const team = call.args?.team || '';
+        const teamCode = team.toUpperCase().trim();
         const slug = team.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
-        const targetUrl = `https://thedrip.to/teams/${slug}/`;
 
         try {
-          const response = await withTimeout(
-            fetch(`https://r.jina.ai/${targetUrl}`).then(r => {
-              if (!r.ok) throw new Error(`Team page not found (${r.status})`);
-              return r.text();
-            }),
-            'TheDrip RAG'
-          );
+          // 1. Query Spanner world-cup-db for structured data
+          let dbData = null;
+          try {
+            const teamRes = await fetch(`/api/world-cup/teams/${teamCode}`);
+            if (teamRes.ok) {
+              dbData = await teamRes.json();
+            } else {
+              // Try name-based lookup via teams list
+              const allRes = await fetch('/api/world-cup/teams');
+              if (allRes.ok) {
+                const { teams } = await allRes.json();
+                dbData = teams.find((t: any) =>
+                  t.name.toLowerCase().includes(slug.replace(/-/g, ' ')) ||
+                  t.teamCode === teamCode
+                );
+              }
+            }
+          } catch { /* DB lookup is best-effort */ }
+
+          const resolvedTeamCode = dbData?.teamCode || teamCode;
+
+          // 2. Scrape TheDrip for profile content
+          let dripContent = null;
+          try {
+            const targetUrl = `https://thedrip.to/teams/${slug}/`;
+            const response = await withTimeout(
+              fetch(`https://r.jina.ai/${targetUrl}`).then(r => {
+                if (!r.ok) throw new Error(`Team page not found (${r.status})`);
+                return r.text();
+              }),
+              'TheDrip RAG'
+            );
+            dripContent = { raw_content: response.substring(0, 15000), source_url: targetUrl };
+          } catch { /* TheDrip scrape is best-effort */ }
+
+          // 3. Fetch Power Ratings from Spanner
+          let ratings = [];
+          try {
+            const ratingsRes = await fetch(`/api/world-cup/teams/${resolvedTeamCode}/power-ratings`);
+            if (ratingsRes.ok) {
+              const ratingsData = await ratingsRes.json();
+              ratings = ratingsData.ratings || [];
+            }
+          } catch (e) { console.warn('Failed to fetch ratings:', e); }
+
+          // 4. Fetch Team Trends from Spanner
+          let trends = [];
+          try {
+            const trendsRes = await fetch(`/api/world-cup/teams/${resolvedTeamCode}/trends`);
+            if (trendsRes.ok) {
+              const trendsData = await trendsRes.json();
+              trends = trendsData.trends || [];
+            }
+          } catch (e) { console.warn('Failed to fetch trends:', e); }
+
+          // 5. Fetch Injury News from Spanner
+          let injuries = [];
+          try {
+            const injuriesRes = await fetch(`/api/world-cup/teams/${resolvedTeamCode}/injuries`);
+            if (injuriesRes.ok) {
+              const injuriesData = await injuriesRes.json();
+              injuries = injuriesData.injuries || [];
+            }
+          } catch (e) { console.warn('Failed to fetch injuries:', e); }
+
+          // 6. Fetch Next Match's Lineup Projections from Spanner
+          let lineupProjections = null;
+          try {
+            const matchesRes = await fetch(`/api/world-cup/matches?team=${resolvedTeamCode}`);
+            if (matchesRes.ok) {
+              const { matches } = await matchesRes.json();
+              const nextMatch = matches?.find((m: any) => m.status === 'scheduled' || m.status === 'live' || m.status === 'in_progress') || matches?.[0];
+              if (nextMatch) {
+                const lineupsRes = await fetch(`/api/world-cup/matches/${nextMatch.matchId}/lineups`);
+                if (lineupsRes.ok) {
+                  const { lineups } = await lineupsRes.json();
+                  const teamLineups = lineups?.filter((l: any) => l.team_code === resolvedTeamCode) || [];
+                  const opponentCode = nextMatch.homeTeam?.code === resolvedTeamCode ? nextMatch.awayTeam?.code : nextMatch.homeTeam?.code;
+                  lineupProjections = {
+                    match_id: nextMatch.matchId,
+                    opponent_code: opponentCode || 'TBD',
+                    players: teamLineups.map((l: any) => ({
+                      player_name: l.player_name,
+                      position: l.position,
+                      is_projected_starter: l.is_projected_starter,
+                    })),
+                  };
+                }
+              }
+            }
+          } catch (e) { console.warn('Failed to fetch lineups:', e); }
 
           toolResult = {
             id: `wc_${Date.now()}`,
             type: 'WORLD_CUP_PROFILE',
             resolution_state: 'RESOLVED',
-            context_summary: `Fetched World Cup profile for ${team} from TheDrip.to`,
-            data: { raw_content: response.substring(0, 15000), source_url: targetUrl },
-            _format_instruction: `Synthesize the raw content into a world_cup_profile JSON artifact. Extract: team, nickname, manager, summary (2 sentences), tactical_outlook, the_drip (kit/apparel/culture details), world_cup_history, key_players (array), and source_url. Output as a \`\`\`world_cup_profile code block.`,
+            context_summary: `World Cup profile for ${team}${dbData ? ` (${dbData.flagEmoji} Group ${dbData.group}, FIFA #${dbData.fifaRanking})` : ''}`,
+            data: {
+              db_profile: dbData,
+              drip_content: dripContent,
+              power_ratings: ratings,
+              trends: trends,
+              injuries: injuries,
+              lineup_projections: lineupProjections,
+            },
+            _format_instruction: `Synthesize the DB profile data, TheDrip content, power ratings, trends, injuries, and lineup projections into a world_cup_profile JSON artifact.
+Extract and output ONLY the raw JSON object inside a \`\`\`world_cup_profile code block. Do NOT add conversational preamble.
+The JSON object must match this schema:
+{
+  "team": "Spain",
+  "nickname": "La Roja",
+  "manager": "Luis de la Fuente",
+  "summary": "Spain plays a possession-heavy style focusing on positional play and quick recoveries...",
+  "tactical_outlook": "Builds from back via pivot players, using high pressing to choke opponents...",
+  "the_drip": "Apparel details, kits description, and cultural highlights...",
+  "world_cup_history": "Winners in 2010, constant force in international football...",
+  "key_players": ["Rodri", "Pedri", "Lamine Yamal"],
+  "source_url": "https://thedrip.to/teams/spain",
+  "fifa_ranking": 8,
+  "group_letter": "A",
+  "confederation": "UEFA",
+  "power_ratings": [ { "rating": 89.7, "source": "elo_market_sentiment", "updated_at": "2026-06-05..." } ],
+  "trends": [ { "trend_type": "moneyline", "wins": 12, "losses": 3, "pushes": 2, "percentage": 0.7059, "source": "historical..." } ],
+  "injuries": [ { "player_name": "Pedri", "position": "MF", "status": "Questionable", "description": "Thigh strain..." } ],
+  "lineup_projections": {
+    "match_id": "match-2026-no-1",
+    "opponent_code": "CZE",
+    "players": [ 
+      { "player_name": "Rodri", "position": "MF", "is_projected_starter": true, "jersey_number": 16, "headshot_url": "https://i.pravatar.cc/150?u=rodri" } 
+    ]
+  },
+  "player_props": [
+    { "player": "Lamine Yamal", "market": "Shots on Target", "line": "O 1.5", "odds": "-135", "trend": "up", "headshot_url": "https://i.pravatar.cc/150?u=yamal" }
+  ],
+  "time_to_first_goal": {
+    "average_minutes": 28,
+    "bands": [
+      { "label": "00:00 - 14:59", "odds": "+210" },
+      { "label": "15:00 - 29:59", "odds": "+280" }
+    ]
+  }
+}`,
           };
         } catch (error: any) {
           toolResult = {
             id: `wc_err_${Date.now()}`,
             type: 'WORLD_CUP_PROFILE',
             resolution_state: 'ERROR',
-            context_summary: `Profile data not available for ${team} on TheDrip yet.`,
+            context_summary: `Profile data not available for ${team}.`,
             data: { error: error.message },
           };
         }
+        console.log('[Truth] Aggregated WC team profile result:', toolResult.context_summary);
+
+      // === WORLD CUP GROUP SNAPSHOT (Spanner: world-cup-db) ===
+      } else if (call.name === 'get_world_cup_group') {
+        console.log('[Truth] Intercepted WC group tool call:', call.args);
+        const group = (call.args?.group || 'D').toUpperCase().replace(/[^A-L]/g, '');
+
+        try {
+          const res = await withTimeout(
+            fetch(`/api/world-cup/groups/${group}`).then(r => {
+              if (!r.ok) throw new Error(`Group lookup failed (${r.status})`);
+              return r.json();
+            }),
+            'WC Group Snapshot'
+          );
+
+          toolResult = {
+            id: `wc_group_${Date.now()}`,
+            type: 'WORLD_CUP_GROUP',
+            resolution_state: 'RESOLVED',
+            context_summary: `Group ${group}: ${res.teams?.length || 0} teams, ${res.matches?.length || 0} matches, ${res.edges?.length || 0} betting edges`,
+            data: res,
+            _format_instruction: `Present this World Cup Group ${group} data in a clear format. Show: 1) Team table with flag, name, FIFA ranking, confederation. 2) Match schedule with dates, teams, and venues. 3) Any betting edges or odds data. Use a scoreboard or structured format.`,
+          };
+        } catch (error: any) {
+          toolResult = {
+            id: `wc_group_err_${Date.now()}`,
+            type: 'WORLD_CUP_GROUP',
+            resolution_state: 'ERROR',
+            context_summary: `Could not load Group ${group} data.`,
+            data: { error: error.message },
+          };
+        }
+
+      // === WORLD CUP SCHEDULE (Spanner: world-cup-db) ===
+      } else if (call.name === 'get_world_cup_schedule') {
+        console.log('[Truth] Intercepted WC schedule tool call:', call.args);
+        const params = new URLSearchParams();
+        if (call.args?.group) params.set('group', call.args.group.toUpperCase());
+        if (call.args?.team) params.set('team', call.args.team.toUpperCase());
+        if (call.args?.stage) params.set('stage', call.args.stage);
+
+        try {
+          const res = await withTimeout(
+            fetch(`/api/world-cup/matches?${params.toString()}`).then(r => {
+              if (!r.ok) throw new Error(`Schedule lookup failed (${r.status})`);
+              return r.json();
+            }),
+            'WC Schedule'
+          );
+
+          toolResult = {
+            id: `wc_sched_${Date.now()}`,
+            type: 'WORLD_CUP_SCHEDULE',
+            resolution_state: 'RESOLVED',
+            context_summary: `Found ${res.matches?.length || 0} World Cup matches`,
+            data: res,
+            _format_instruction: `Present the World Cup 2026 schedule in a clean table format with date/time, home team vs away team (with flags), venue, and city. Sort chronologically.`,
+          };
+        } catch (error: any) {
+          toolResult = {
+            id: `wc_sched_err_${Date.now()}`,
+            type: 'WORLD_CUP_SCHEDULE',
+            resolution_state: 'ERROR',
+            context_summary: `Could not load schedule.`,
+            data: { error: error.message },
+          };
+        }
+
+      // === WORLD CUP BETTING EDGES (Spanner: world-cup-db) ===
+      } else if (call.name === 'get_world_cup_edges') {
+        console.log('[Truth] Intercepted WC edges tool call:', call.args);
+        const params = new URLSearchParams();
+        if (call.args?.team) params.set('team', call.args.team.toUpperCase());
+        if (call.args?.minEdge) params.set('minEdge', String(call.args.minEdge));
+
+        try {
+          const res = await withTimeout(
+            fetch(`/api/world-cup/edges?${params.toString()}`).then(r => {
+              if (!r.ok) throw new Error(`Edges lookup failed (${r.status})`);
+              return r.json();
+            }),
+            'WC Edges'
+          );
+
+          toolResult = {
+            id: `wc_edges_${Date.now()}`,
+            type: 'WORLD_CUP_EDGES',
+            resolution_state: 'RESOLVED',
+            context_summary: `Found ${res.edges?.length || 0} betting edges${call.args?.team ? ` for ${call.args.team}` : ''}`,
+            data: res,
+            _format_instruction: `Present the betting edges in a clear analysis format. For each edge show: team, market type, sportsbook implied %, prediction market implied %, edge %, direction, and sources. Highlight the highest-value edges.`,
+          };
+        } catch (error: any) {
+          toolResult = {
+            id: `wc_edges_err_${Date.now()}`,
+            type: 'WORLD_CUP_EDGES',
+            resolution_state: 'ERROR',
+            context_summary: `Could not load edges.`,
+            data: { error: error.message },
+          };
+        }
+
 
       // === YOUTUBE SEARCH ===
       } else if (call.name === 'search_youtube') {
@@ -750,6 +993,21 @@ export function useToolCalls(workspaceToken: string | null) {
       }
     }
 
+    // ── SYSTEM-LEVEL FALLBACK INTERCEPTOR ──────────────────────────────
+    // If any tool returns empty/error data, inject a directive telling the
+    // model to use Google Search instead of surfacing "no data" to the user.
+    const isError = toolResult.error || toolResult.resolution_state === 'ERROR';
+    const isEmpty = (
+      (toolResult.data?.events && Array.isArray(toolResult.data.events) && toolResult.data.events.length === 0) ||
+      (toolResult.data?.edges && Array.isArray(toolResult.data.edges) && toolResult.data.edges.length === 0) ||
+      (toolResult.data?.matches && Array.isArray(toolResult.data.matches) && toolResult.data.matches.length === 0) ||
+      (toolResult.data?.error)
+    );
+
+    if (isError || isEmpty) {
+      toolResult._fallback_instruction = `CRITICAL: This tool returned ${isError ? 'an error' : 'empty data'}. Do NOT tell the user "no data available". Instead, IMMEDIATELY use Google Search to answer the user's original question with live web data. The user should see the answer, not the tool failure.`;
+    }
+
     // Payload Sanitizer: Strip reserved OpenAPI keywords ($ref, uid)
     // and heavy hypermedia links before returning to Gemini.
     // ESPN's API uses $ref internally, which Vertex AI interprets as
@@ -770,6 +1028,6 @@ export function useToolCalls(workspaceToken: string | null) {
 
   return {
     dispatchToolCall,
-    tools: [workspaceTool, readEmailTool, downloadAttachmentTool, sendEmailTool, draftEmailTool, trashEmailTool, listDriveFilesTool, exportDriveFileTool, createDriveDocTool, deployHtmlTool, reviewDocumentTool, sportsTool, worldCupTeamTool, youtubeSearchTool],
+    tools: [workspaceTool, readEmailTool, downloadAttachmentTool, sendEmailTool, draftEmailTool, trashEmailTool, listDriveFilesTool, exportDriveFileTool, createDriveDocTool, deployHtmlTool, reviewDocumentTool, ...allSportsTools, ...allWorldCupTools, youtubeSearchTool],
   };
 }

@@ -10,12 +10,17 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import * as dataService from '../services/dataService';
 import type { ConversationSummary } from '../types/persistence';
+import { GitHubPanel } from './GitHubPanel';
 
 interface ConversationSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectConversation: (conversationId: string) => void;
   activeConversationId: string | null;
+  isGitHubConnected?: boolean;
+  githubUser?: string;
+  onConnectGitHub?: () => void;
+  onDisconnectGitHub?: () => void;
 }
 
 /** Relative time — minimal, lowercase, no "ago". */
@@ -86,11 +91,16 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   onClose,
   onSelectConversation,
   activeConversationId,
+  isGitHubConnected,
+  githubUser,
+  onConnectGitHub,
+  onDisconnectGitHub,
 }) => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'history' | 'github'>('history');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -187,16 +197,44 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             transition={{ type: 'spring', damping: 40, stiffness: 400, mass: 0.8 }}
             className="fixed top-0 left-0 h-full w-[296px] bg-[#F9F8F6] border-r border-[#DDD8D2] z-50 flex flex-col select-none"
           >
-            {/* Header */}
-            <div className="px-5 pt-6 pb-4">
-              <h2 className="text-[11px] font-semibold tracking-[0.1em] text-[#8C7A6B]/60 uppercase">
-                History
-              </h2>
+            {/* Header with Tab Switcher */}
+            <div className="px-5 pt-6 pb-3">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setActiveTab('history')}
+                  className={`text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-200 ${
+                    activeTab === 'history' ? 'text-[#8C7A6B]/80' : 'text-[#8C7A6B]/25 hover:text-[#8C7A6B]/50'
+                  }`}
+                >
+                  History
+                </button>
+                <button
+                  onClick={() => setActiveTab('github')}
+                  className={`text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-200 flex items-center gap-1.5 ${
+                    activeTab === 'github' ? 'text-[#8C7A6B]/80' : 'text-[#8C7A6B]/25 hover:text-[#8C7A6B]/50'
+                  }`}
+                >
+                  GitHub
+                  {isGitHubConnected && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400/80" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="mx-5 h-px bg-[#DDD8D2]/70" />
 
             {/* Content */}
+            {activeTab === 'github' ? (
+              <div className="flex-1 overflow-hidden">
+                <GitHubPanel
+                  isConnected={isGitHubConnected}
+                  username={githubUser}
+                  onConnect={onConnectGitHub}
+                  onDisconnect={onDisconnectGitHub}
+                />
+              </div>
+            ) : (
             <div className="flex-1 overflow-y-auto no-scrollbar">
               {isLoading ? (
                 <div className="px-5 pt-4 space-y-3.5">
@@ -361,6 +399,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 </LayoutGroup>
               )}
             </div>
+            )}
 
             {/* Footer */}
             <div className="px-5 py-3.5 border-t border-[#DDD8D2]/50">

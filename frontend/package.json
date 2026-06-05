@@ -17,6 +17,7 @@
     "marked": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "react-router-dom": "^7.17.0",
     "recharts": "latest"
   },
   "devDependencies": {
