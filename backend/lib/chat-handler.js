@@ -144,7 +144,12 @@ const dataTableToolDeclaration = {
 
 function buildSystemPrompt() {
   const now = new Date();
-  const dateContext = now.toISOString().split('T')[0].replace(/-/g, '');
+  // FIX: Force US Pacific timezone to prevent UTC drift
+  // At 6PM Pacific on June 4th, UTC is already June 5th — wrong day's games
+  const dateContext = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(now).replace(/-/g, '');
   const yearContext = now.getFullYear();
 
   return `You are AURA, an elite AI-native sports intelligence platform, live game tracker, and world-class betting sharp.

@@ -270,8 +270,9 @@ export function useChat(workspaceToken: string | null) {
     const functionCalls: any[] = [];
     try {
       for await (const chunk of stream) {
-        if (chunk.functionCalls) functionCalls.push(...chunk.functionCalls);
-        if (chunk.text) {
+        if (chunk.functionCalls) {
+          functionCalls.push(...chunk.functionCalls);
+        } else if (chunk.text) {
           responseText += chunk.text;
           updateLastMessage(responseText);
         }

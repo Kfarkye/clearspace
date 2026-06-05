@@ -253,6 +253,10 @@ export const sportsTool: FunctionDeclaration = {
         type: Type.BOOLEAN,
         description: 'Set to true to include play-by-play data (game situation, recent plays, current batter/pitcher). Only works with event_id. Use for deep-dive game analysis.'
       },
+      team: {
+        type: Type.STRING,
+        description: 'Optional team name the user is asking about (e.g., "Braves", "Yankees", "Lakers"). Extract from the user\'s message to scope results to that team\'s game only.'
+      },
     },
     required: ['sport']
   }
@@ -601,6 +605,7 @@ export function useToolCalls(workspaceToken: string | null) {
         const date = call.args?.date;
         const eventId = call.args?.event_id;
         const includePlayByPlay = call.args?.include_play_by_play;
+        const team = call.args?.team;
 
         if (eventId) {
           const fetches: Promise<any>[] = [
@@ -616,10 +621,29 @@ export function useToolCalls(workspaceToken: string | null) {
             ...(results[1] ? { playByPlay: results[1] } : {}),
           };
         } else {
-          toolResult = await withTimeout(
+          const scoreboard = await withTimeout(
             espnService.getScoreboard(sport, date),
             'ESPN Scoreboard'
           );
+
+          // Context Envelope: If the user mentioned a specific team,
+          // filter the payload so the LLM ONLY sees that team's game.
+          // Prevents hallucination pivots to unrelated matchups.
+          if (team && scoreboard?.events) {
+            const searchTeam = team.toLowerCase().trim();
+            const filtered = scoreboard.events.filter((game: any) =>
+              JSON.stringify(game).toLowerCase().includes(searchTeam)
+            );
+            toolResult = {
+              ...scoreboard,
+              events: filtered,
+              _context_note: filtered.length === 0
+                ? `No games found matching '${team}'. Tell the user their team is not playing today.`
+                : `Filtered to ${filtered.length} game(s) matching '${team}'.`,
+            };
+          } else {
+            toolResult = scoreboard;
+          }
         }
 
       } else {
