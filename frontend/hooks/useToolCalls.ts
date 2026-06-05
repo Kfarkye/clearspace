@@ -262,6 +262,21 @@ export const sportsTool: FunctionDeclaration = {
   }
 };
 
+export const worldCupTeamTool: FunctionDeclaration = {
+  name: 'get_world_cup_team_profile',
+  description: 'Fetches World Cup 2026 team profiles, kits, apparel, tactical analysis, and history from TheDrip.to via headless scrape. Use when a user asks about a national soccer/football team\'s World Cup profile, their jerseys/kits, or team history. DO NOT use for live match scores (use get_sports_data instead).',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      team: {
+        type: Type.STRING,
+        description: 'The national team name, e.g., Brazil, France, United States'
+      },
+    },
+    required: ['team']
+  }
+};
+
 // --- Timeout Utility ---
 
 const TOOL_TIMEOUT_MS = 10000;
@@ -646,6 +661,40 @@ export function useToolCalls(workspaceToken: string | null) {
           }
         }
 
+      // === WORLD CUP TEAM PROFILE (Headless RAG via Jina) ===
+      } else if (call.name === 'get_world_cup_team_profile') {
+        console.log('[Truth] Intercepted WC team profile tool call:', call.args);
+        const team = call.args?.team || '';
+        const slug = team.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
+        const targetUrl = `https://thedrip.to/teams/${slug}/`;
+
+        try {
+          const response = await withTimeout(
+            fetch(`https://r.jina.ai/${targetUrl}`).then(r => {
+              if (!r.ok) throw new Error(`Team page not found (${r.status})`);
+              return r.text();
+            }),
+            'TheDrip RAG'
+          );
+
+          toolResult = {
+            id: `wc_${Date.now()}`,
+            type: 'WORLD_CUP_PROFILE',
+            resolution_state: 'RESOLVED',
+            context_summary: `Fetched World Cup profile for ${team} from TheDrip.to`,
+            data: { raw_content: response.substring(0, 15000), source_url: targetUrl },
+            _format_instruction: `Synthesize the raw content into a world_cup_profile JSON artifact. Extract: team, nickname, manager, summary (2 sentences), tactical_outlook, the_drip (kit/apparel/culture details), world_cup_history, key_players (array), and source_url. Output as a \`\`\`world_cup_profile code block.`,
+          };
+        } catch (error: any) {
+          toolResult = {
+            id: `wc_err_${Date.now()}`,
+            type: 'WORLD_CUP_PROFILE',
+            resolution_state: 'ERROR',
+            context_summary: `Profile data not available for ${team} on TheDrip yet.`,
+            data: { error: error.message },
+          };
+        }
+
       } else {
         toolResult = { error: `Unknown tool: ${call.name}` };
       }
@@ -662,6 +711,6 @@ export function useToolCalls(workspaceToken: string | null) {
 
   return {
     dispatchToolCall,
-    tools: [workspaceTool, readEmailTool, downloadAttachmentTool, sendEmailTool, draftEmailTool, trashEmailTool, listDriveFilesTool, exportDriveFileTool, createDriveDocTool, deployHtmlTool, reviewDocumentTool, sportsTool],
+    tools: [workspaceTool, readEmailTool, downloadAttachmentTool, sendEmailTool, draftEmailTool, trashEmailTool, listDriveFilesTool, exportDriveFileTool, createDriveDocTool, deployHtmlTool, reviewDocumentTool, sportsTool, worldCupTeamTool],
   };
 }

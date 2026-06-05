@@ -15,6 +15,7 @@ import { EmailViewerArtifact } from './EmailViewerArtifact';
 import { ScoreboardArtifact } from './ScoreboardArtifact';
 import { DataTableArtifact } from './DataTableArtifact';
 import { LicensingArtifact } from './LicensingArtifact';
+import { WorldCupArtifact } from './WorldCupArtifact';
 import { ThinkingMode } from '../hooks/useChat';
 import { useImageUpload } from '../hooks/useImageUpload';
 
@@ -190,10 +191,11 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
       let isEmailViewer = langLower === 'emailviewer' || langLower.startsWith('emailviewer');
       let isDataTable = langLower === 'datatable' || langLower.startsWith('datatable');
       let isLicensing = langLower === 'licensing_guide' || langLower.startsWith('licensing');
+      let isWorldCup = langLower === 'world_cup_profile' || langLower.startsWith('world_cup');
       const isHtmlArtifact = langLower === 'html' && code.trim().startsWith('<');
 
       // Fallback detection: model used ```json but content matches an artifact schema
-      if (!isBettingAngles && !isScoreboard && !isWorkspace && !isTravelHealth && !isSidebar && !isCodeSandbox && !isEmailViewer && !isDataTable && !isLicensing && (langLower === 'json' || langLower === 'text')) {
+      if (!isBettingAngles && !isScoreboard && !isWorkspace && !isTravelHealth && !isSidebar && !isCodeSandbox && !isEmailViewer && !isDataTable && !isLicensing && !isWorldCup && (langLower === 'json' || langLower === 'text')) {
         if (code.includes('"analysis_markdown"') && code.includes('"angles"')) {
           isBettingAngles = true;
         } else if (code.includes('"games"') && code.includes('"summary_markdown"') && (code.includes('"home_team"') || code.includes('"away_team"'))) {
@@ -206,6 +208,8 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
           isDataTable = true;
         } else if (code.includes('"profession"') && code.includes('"requirements"') && code.includes('"state"')) {
           isLicensing = true;
+        } else if (code.includes('"tactical_outlook"') && code.includes('"team"') && code.includes('"key_players"')) {
+          isWorldCup = true;
         }
       }
 
@@ -227,6 +231,8 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
         elements.push(<DataTableArtifact key={`artifact-${index}`} dataString={code} />);
       } else if (isLicensing) {
         elements.push(<LicensingArtifact key={`artifact-${index}`} dataString={code} />);
+      } else if (isWorldCup) {
+        elements.push(<WorldCupArtifact key={`artifact-${index}`} dataString={code} />);
       } else if (isHtmlArtifact) {
         elements.push(<HtmlArtifact key={`artifact-${index}`} dataString={code} workspaceToken={workspaceToken} />);
       } else {

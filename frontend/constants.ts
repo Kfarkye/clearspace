@@ -379,6 +379,26 @@ DRIVE WORKFLOW:
    f. ask "Save to Drive, deploy, or both?"
 8. "review this document" / user uploads image of document → extract text via vision → call review_document with the extracted content → present improvements → ask to save/deploy
 
+WORLD CUP 2026 TEAM PROFILES:
+- get_world_cup_team_profile: Fetches team profiles, kits, apparel, tactical analysis, and history from TheDrip.to via headless scrape.
+- Trigger when a user asks about a national soccer/football team's World Cup profile, jerseys, kits, or team history.
+- DO NOT use for live match scores or schedules (use get_sports_data instead).
+- Synthesize the scraped text and output EXACTLY this JSON format using the \`world_cup_profile\` markdown language:
+
+\`\`\`world_cup_profile
+{
+  "team": "Brazil",
+  "nickname": "Seleção",
+  "manager": "Dorival Júnior",
+  "summary": "A punchy, 2-sentence overview of the team's World Cup status and vibe.",
+  "tactical_outlook": "A brief analysis of their playstyle, formation, or strengths.",
+  "the_drip": "Extract any mention of their kit style, culture, or apparel.",
+  "world_cup_history": "5-time champions (1958, 1962, 1970, 1994, 2002)",
+  "key_players": ["Vini Jr.", "Rodrygo", "Alisson"],
+  "source_url": "https://thedrip.to/teams/brazil/"
+}
+\`\`\`
+
 DOCUMENT REVIEW WORKFLOW (vision + edit + save + email):
 This workflow has TWO entry points:
 
