@@ -706,6 +706,21 @@ export function useToolCalls(workspaceToken: string | null) {
       }
     }
 
+    // Payload Sanitizer: Strip reserved OpenAPI keywords ($ref, uid)
+    // and heavy hypermedia links before returning to Gemini.
+    // ESPN's API uses $ref internally, which Vertex AI interprets as
+    // an OpenAPI schema reference, causing 400 INVALID_ARGUMENT crashes.
+    try {
+      toolResult = JSON.parse(
+        JSON.stringify(toolResult, (key, value) => {
+          if (key === '$ref' || key === 'uid' || key === 'links') return undefined;
+          return value;
+        })
+      );
+    } catch {
+      // If sanitization fails, return the raw result — better than crashing
+    }
+
     return toolResult;
   };
 

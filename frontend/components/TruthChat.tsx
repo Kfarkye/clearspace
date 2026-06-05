@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Message } from '../types';
-import { ArrowDown, Copy, Check } from 'lucide-react';
+import { ArrowDown, Copy, Check, AlertCircle } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -98,6 +98,37 @@ const ThinkingIndicator: React.FC<{ chatMode: 'operator' | 'standard' }> = ({ ch
 const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => void; chatMode: 'operator' | 'standard'; workspaceToken?: string | null; onRetrySave?: () => void }> = ({ msg, onSendMessage, chatMode, workspaceToken, onRetrySave }) => {
   const isUser = msg.role === 'user';
   const [msgCopied, setMsgCopied] = useState(false);
+
+  // Error boundary: intercept raw API crash strings
+  const isFatalError = !isUser && typeof msg.content === 'string' && (
+    msg.content.includes('"status":"INVALID_ARGUMENT"') ||
+    msg.content.includes('INVALID_ARGUMENT') ||
+    msg.content.startsWith('Error: Error:') ||
+    msg.content.includes('400 Bad Request')
+  );
+
+  if (isFatalError) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col items-start w-full mb-6"
+      >
+        <div className="p-5 bg-white/70 backdrop-blur-2xl border border-[#FF3B30]/10 rounded-[22px] shadow-[0_8px_30px_rgba(255,59,48,0.04)] max-w-[85%] sm:max-w-[75%]">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-7 h-7 rounded-full bg-[#FF3B30]/10 flex items-center justify-center shrink-0">
+              <AlertCircle size={14} className="text-[#FF3B30]" strokeWidth={2.5} />
+            </div>
+            <span className="text-[14px] font-semibold tracking-tight text-[#1D1D1F]">Data Sync Error</span>
+          </div>
+          <p className="text-[13.5px] leading-[1.6] text-[#1D1D1F]/60 pl-10 text-pretty">
+            A routing error occurred while fetching live data. Please try your request again.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
 
   const handleCopyMessage = useCallback(() => {
     navigator.clipboard.writeText(msg.content || '');
