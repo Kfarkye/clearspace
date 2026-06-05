@@ -16,6 +16,7 @@ import { ScoreboardArtifact } from './ScoreboardArtifact';
 import { DataTableArtifact } from './DataTableArtifact';
 import { LicensingArtifact } from './LicensingArtifact';
 import { WorldCupArtifact } from './WorldCupArtifact';
+import { AuraYouTube } from './AuraYouTube';
 import { ThinkingMode } from '../hooks/useChat';
 import { useImageUpload } from '../hooks/useImageUpload';
 
@@ -223,10 +224,11 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
       let isDataTable = langLower === 'datatable' || langLower.startsWith('datatable');
       let isLicensing = langLower === 'licensing_guide' || langLower.startsWith('licensing');
       let isWorldCup = langLower === 'world_cup_profile' || langLower.startsWith('world_cup');
+      let isYouTube = langLower === 'youtube_media' || langLower.startsWith('youtube');
       const isHtmlArtifact = langLower === 'html' && code.trim().startsWith('<');
 
       // Fallback detection: model used ```json but content matches an artifact schema
-      if (!isBettingAngles && !isScoreboard && !isWorkspace && !isTravelHealth && !isSidebar && !isCodeSandbox && !isEmailViewer && !isDataTable && !isLicensing && !isWorldCup && (langLower === 'json' || langLower === 'text')) {
+      if (!isBettingAngles && !isScoreboard && !isWorkspace && !isTravelHealth && !isSidebar && !isCodeSandbox && !isEmailViewer && !isDataTable && !isLicensing && !isWorldCup && !isYouTube && (langLower === 'json' || langLower === 'text')) {
         if (code.includes('"analysis_markdown"') && code.includes('"angles"')) {
           isBettingAngles = true;
         } else if (code.includes('"games"') && code.includes('"summary_markdown"') && (code.includes('"home_team"') || code.includes('"away_team"'))) {
@@ -241,6 +243,8 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
           isLicensing = true;
         } else if (code.includes('"tactical_outlook"') && code.includes('"team"') && code.includes('"key_players"')) {
           isWorldCup = true;
+        } else if (code.includes('"videos"') && (code.includes('"thumbnail"') || code.includes('"videoId"'))) {
+          isYouTube = true;
         }
       }
 
@@ -264,6 +268,8 @@ const MessageItem: React.FC<{ msg: Message; onSendMessage: (input: string) => vo
         elements.push(<LicensingArtifact key={`artifact-${index}`} dataString={code} />);
       } else if (isWorldCup) {
         elements.push(<WorldCupArtifact key={`artifact-${index}`} dataString={code} />);
+      } else if (isYouTube) {
+        elements.push(<AuraYouTube key={`artifact-${index}`} dataString={code} />);
       } else if (isHtmlArtifact) {
         elements.push(<HtmlArtifact key={`artifact-${index}`} dataString={code} workspaceToken={workspaceToken} />);
       } else {

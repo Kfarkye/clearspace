@@ -277,6 +277,21 @@ export const worldCupTeamTool: FunctionDeclaration = {
   }
 };
 
+export const youtubeSearchTool: FunctionDeclaration = {
+  name: 'search_youtube',
+  description: 'Searches YouTube for videos. Use when the user asks to play music, find a video, watch highlights, or any media request (e.g., "play Drake", "show me highlights", "find a tutorial"). Returns top video results with titles, thumbnails, and playback URLs.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      query: {
+        type: Type.STRING,
+        description: 'The YouTube search query, e.g., "Drake God\'s Plan", "Braves highlights today", "React tutorial"'
+      },
+    },
+    required: ['query']
+  }
+};
+
 // --- Timeout Utility ---
 
 const TOOL_TIMEOUT_MS = 10000;
@@ -695,6 +710,35 @@ export function useToolCalls(workspaceToken: string | null) {
           };
         }
 
+      // === YOUTUBE SEARCH ===
+      } else if (call.name === 'search_youtube') {
+        console.log('[Truth] Intercepted YouTube search tool call:', call.args);
+        const query = call.args?.query || '';
+
+        try {
+          const res = await withTimeout(
+            fetch(`/api-proxy/youtube?q=${encodeURIComponent(query)}`).then(r => {
+              if (!r.ok) throw new Error(`YouTube proxy returned ${r.status}`);
+              return r.json();
+            }),
+            'YouTube Search'
+          );
+
+          const videos = Array.isArray(res) ? res : res?.videos || [];
+          toolResult = {
+            type: 'YOUTUBE_MEDIA',
+            context_summary: `Top video results for "${query}"`,
+            _format_instruction: `Output the results as a \`\`\`youtube_media JSON code block with { "videos": [...], "query": "${query}" }. Each video has: title, url, thumbnail, author, duration.`,
+            data: { videos, query },
+          };
+        } catch (error: any) {
+          toolResult = {
+            type: 'YOUTUBE_MEDIA',
+            context_summary: `YouTube search failed for "${query}"`,
+            data: { error: error.message, query },
+          };
+        }
+
       } else {
         toolResult = { error: `Unknown tool: ${call.name}` };
       }
@@ -726,6 +770,6 @@ export function useToolCalls(workspaceToken: string | null) {
 
   return {
     dispatchToolCall,
-    tools: [workspaceTool, readEmailTool, downloadAttachmentTool, sendEmailTool, draftEmailTool, trashEmailTool, listDriveFilesTool, exportDriveFileTool, createDriveDocTool, deployHtmlTool, reviewDocumentTool, sportsTool, worldCupTeamTool],
+    tools: [workspaceTool, readEmailTool, downloadAttachmentTool, sendEmailTool, draftEmailTool, trashEmailTool, listDriveFilesTool, exportDriveFileTool, createDriveDocTool, deployHtmlTool, reviewDocumentTool, sportsTool, worldCupTeamTool, youtubeSearchTool],
   };
 }

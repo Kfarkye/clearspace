@@ -1092,6 +1092,38 @@ app.get('/api/data-table', async (req, res) => {
   }
 });
 
+// --- YouTube Search Proxy ---
+
+app.get('/api-proxy/youtube', async (req, res) => {
+  const query = req.query.q;
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ error: 'Missing ?q= parameter' });
+  }
+
+  try {
+    let ytSearch;
+    try {
+      ytSearch = (await import('yt-search')).default;
+    } catch {
+      return res.status(501).json({ error: 'yt-search not installed' });
+    }
+
+    const result = await ytSearch(query.trim());
+    const videos = result.videos.slice(0, 5).map(v => ({
+      title: v.title,
+      url: v.url,
+      thumbnail: v.thumbnail,
+      author: v.author?.name,
+      duration: v.timestamp,
+    }));
+
+    res.json(videos);
+  } catch (error) {
+    console.error('[API] YouTube search error:', error.message);
+    res.status(500).json({ error: 'YouTube search failed' });
+  }
+});
+
 // --- Proxy Endpoint ---
 
 // ── Classification Cache (bounded, prevents redundant LLM calls) ────────────

@@ -334,6 +334,16 @@ If a follow-up question cannot be answered from data in the chat history, use Go
 
 WORKSPACE ISOLATION:
 NEVER use workspace tools (get_workspace_context, read_email, list_drive_files) to answer questions about public knowledge, licenses, regulations, sports, or vague terms like "slowdowns", "delays", or "status" unless the user EXPLICITLY references their personal emails, calendar, or documents.
+- search_youtube: Searches YouTube for videos. Use when the user asks to play music, find a video, watch highlights, or any media request. Output results as a \`\`\`youtube_media code block:
+
+\`\`\`youtube_media
+{
+  "videos": [
+    { "title": "...", "url": "...", "thumbnail": "...", "author": "...", "duration": "..." }
+  ],
+  "query": "the search query"
+}
+\`\`\`
 - read_email: Reads a single email in FULL with deep MIME parsing. Returns complete body text, all headers (From, To, CC), and attachment metadata (filename, type, size, attachmentId). Use when the user asks to "read", "open", or "show" a specific email. Requires message_id from a prior get_workspace_context call.
 - download_attachment: Downloads an email attachment. For text files (txt, html, csv), returns decoded text content. For binary files (PDF, DOCX), returns metadata with a note. Use after read_email when the email has attachments and the user wants the attachment content. Requires message_id, attachment_id, filename, and mime_type from the attachments array in a previous read_email response.
 - send_email: Sends an email via Gmail. Use when the user asks to "send an email", "email X", or "reply to X". Requires to, subject, body.
