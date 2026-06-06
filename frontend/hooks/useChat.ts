@@ -97,7 +97,7 @@ export function useChat(workspaceToken: string | null) {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input, history, mode: chatMode, thinkingMode: thinkingModeRaw, imageBase64, imageMime }),
+      body: JSON.stringify({ message: input, history, mode: chatMode, thinkingMode: thinkingModeRaw, imageBase64, imageMime, workspaceToken }),
     });
 
     if (!response.ok) throw new Error(`Server error: ${response.status}`);

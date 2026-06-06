@@ -40,7 +40,7 @@ export function mountChatRoute(app) {
     });
 
     try {
-      const { message: rawMessage, history: rawHistory, mode } = req.body;
+      const { message: rawMessage, history: rawHistory, mode, workspaceToken } = req.body;
       const message = sanitizeChatInput(rawMessage);
 
       if (!message) return res.status(400).json({ error: 'Message required' });
@@ -75,7 +75,7 @@ export function mountChatRoute(app) {
 
       // 1. Execute Intent via Headless Intelligence Service
       console.log(`[CHAT] Executing generateAsset for query: "${message}" (mode: ${mode})...`);
-      const generatedAssets = await generateAsset(message, history, abortController.signal, mode);
+      const generatedAssets = await generateAsset(message, history, abortController.signal, mode, workspaceToken || null);
       console.log(`[CHAT] generateAsset completed, returned ${generatedAssets.length} assets.`);
 
       if (abortController.signal.aborted) return;

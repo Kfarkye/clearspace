@@ -11,6 +11,7 @@ import { fetchDataTable } from './data-table-agent.js';
 import * as sportsDAL from './sports-dal.js';
 import { classify, getDispatch } from './router.js';
 import { DeepResearchEngine } from './deep-research-engine.js';
+import { handleReadEmails, handleReadEmailDetail, handleReadCalendar, handleSearchDrive } from './workspace-handler.js';
 
 // ── Configuration ─────────────────────────────────────────────────────────
 
@@ -85,6 +86,50 @@ const playerPropToolDeclaration = {
   },
 };
 
+// ── Workspace Tool Declarations ───────────────────────────────────────────
+
+const readEmailsToolDeclaration = {
+  name: 'read_emails',
+  description: 'Lists emails from the user\'s Gmail inbox. Use when the user asks to check email, read inbox, or search for specific emails.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      query: { type: Type.STRING, description: 'Gmail search query (e.g. "is:unread", "from:boss@company.com", "subject:invoice")' },
+      maxResults: { type: Type.INTEGER, description: 'Number of emails to return (default 10, max 20)' }
+    },
+  },
+};
+
+const readEmailDetailToolDeclaration = {
+  name: 'read_email_detail',
+  description: 'Reads the full body and attachments of a specific email by its message ID. Use after listing emails to read a specific one.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: { messageId: { type: Type.STRING } },
+    required: ['messageId'],
+  },
+};
+
+const readCalendarToolDeclaration = {
+  name: 'read_calendar',
+  description: 'Fetches today\'s calendar events from the user\'s Google Calendar. Use when the user asks about their schedule, meetings, or what\'s on their calendar.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {},
+  },
+};
+
+const searchDriveToolDeclaration = {
+  name: 'search_drive',
+  description: 'Searches the user\'s Google Drive for files by name or type. Use when the user asks about their documents, spreadsheets, or files.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      query: { type: Type.STRING, description: 'Search term to filter files by name' },
+      type: { type: Type.STRING, enum: ['all', 'docs', 'sheets', 'slides'], description: 'Filter by file type' }
+    },
+  },
+};
 
 const dataTableToolDeclaration = {
   name: 'generate_data_table',
@@ -465,6 +510,16 @@ TOOL ROUTING PROTOCOL (STRICT):
 3. WORLD CUP HISTORY: \`get_world_cup_historical_matches\`.
 4. MLB HISTORY: \`get_mlb_historical_matches\`.`;
   }
+
+  if (mode === 'workspace') {
+    base += `
+TOOL ROUTING PROTOCOL (STRICT):
+1. CHECK EMAIL / INBOX: \`read_emails\`. Always call this first when the user mentions email.
+2. READ SPECIFIC EMAIL: \`read_email_detail\`. Use after listing emails when the user wants to read one.
+3. CALENDAR / SCHEDULE / MEETINGS: \`read_calendar\`.
+4. DOCUMENTS / FILES / DRIVE: \`search_drive\`.
+Never hallucinate email content. Always use the tools to fetch real data from the user's connected Google Workspace.`;
+  }
   return base;
 }
 
@@ -551,7 +606,7 @@ class ResilientNetworkClient {
   }
 }
 
-export async function generateAsset(message, history = [], signal = null, chatMode = 'operator') {
+export async function generateAsset(message, history = [], signal = null, chatMode = 'operator', workspaceToken = null) {
   const ai = getAiClient();
 
   const contents = [
@@ -576,6 +631,15 @@ export async function generateAsset(message, history = [], signal = null, chatMo
   } else if (classification.mode === 'research') {
     tools.unshift({
       functionDeclarations: [deepResearchToolDeclaration]
+    });
+  }
+
+  if (classification.mode === 'workspace' && workspaceToken) {
+    tools.unshift({
+      functionDeclarations: [
+        readEmailsToolDeclaration, readEmailDetailToolDeclaration,
+        readCalendarToolDeclaration, searchDriveToolDeclaration
+      ]
     });
   }
 
@@ -732,6 +796,50 @@ export async function generateAsset(message, history = [], signal = null, chatMo
               depth: call.args.depth
             });
             return buildAsset('RESEARCH_MEMO', `Deep Research: ${call.args.topic}`, { insights }, 'system', sources);
+          }
+          case 'read_emails': {
+            if (!workspaceToken) return buildAsset('WORKSPACE_DOC', 'Workspace Not Connected', { text: 'Please connect your Google Workspace account in Settings to use this feature.' }, 'system', sources);
+            const emailResult = await handleReadEmails(workspaceToken, call.args?.query, call.args?.maxResults);
+            return buildAsset('EMAIL_LIST', 'Inbox', emailResult, 'system', sources);
+          }
+          case 'read_email_detail': {
+            if (!workspaceToken) return buildAsset('WORKSPACE_DOC', 'Workspace Not Connected', { text: 'Please connect your Google Workspace account in Settings to use this feature.' }, 'system', sources);
+            const emailDetail = await handleReadEmailDetail(workspaceToken, call.args?.messageId);
+            return buildAsset('EMAIL_DETAIL', emailDetail.subject || 'Email', emailDetail, 'system', sources);
+          }
+          case 'read_calendar': {
+            if (!workspaceToken) return buildAsset('WORKSPACE_DOC', 'Workspace Not Connected', { text: 'Please connect your Google Workspace account in Settings to use this feature.' }, 'system', sources);
+            const calendarResult = await handleReadCalendar(workspaceToken);
+            const calColumns = ['Time', 'Event', 'Location', 'Attendees'];
+            const calRows = calendarResult.events.map(e => [
+              new Date(e.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              e.title,
+              e.location || '-',
+              e.attendees.length > 0 ? e.attendees.join(', ') : '-'
+            ]);
+            return buildAsset('DATA_TABLE', `Calendar — ${calendarResult.date}`, {
+              title: `Your Schedule — ${calendarResult.date}`,
+              columns: calColumns,
+              rows: calRows,
+              source: 'Google Calendar'
+            }, 'system', sources);
+          }
+          case 'search_drive': {
+            if (!workspaceToken) return buildAsset('WORKSPACE_DOC', 'Workspace Not Connected', { text: 'Please connect your Google Workspace account in Settings to use this feature.' }, 'system', sources);
+            const driveResult = await handleSearchDrive(workspaceToken, call.args?.query, call.args?.type);
+            const driveColumns = ['Name', 'Type', 'Last Modified', 'Link'];
+            const driveRows = driveResult.files.map(f => [
+              f.name,
+              f.type.replace('application/vnd.google-apps.', ''),
+              new Date(f.lastModified).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              f.link || '-'
+            ]);
+            return buildAsset('DATA_TABLE', `Drive: ${driveResult.query}`, {
+              title: `Google Drive — ${driveResult.query}`,
+              columns: driveColumns,
+              rows: driveRows,
+              source: 'Google Drive'
+            }, 'system', sources);
           }
           default:
             return null;
