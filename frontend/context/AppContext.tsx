@@ -20,6 +20,7 @@ interface AppContextType {
   chatMode: ChatMode;
   thinkingMode: ThinkingMode;
   conversationId: string | null;
+  executionPhase: string | null;
   setThinkingMode: (mode: ThinkingMode) => void;
   handleModeSwitch: (mode: ChatMode) => void;
   handleNewChat: () => void;

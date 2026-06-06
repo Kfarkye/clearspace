@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Copy, Check, ExternalLink } from 'lucide-react';
+import { IOSBettingCard } from './IOSBettingCard';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -13,6 +14,14 @@ interface BestBet {
   teamAbbr?: string;
   imageUrl?: string;
   deepLink?: string;
+  title?: string;
+  market_price?: string | number;
+  fair_price?: string | number;
+  edge_source?: string;
+  live_state?: string;
+  risk_flag?: string;
+  why_now?: string;
+  invalidation_condition?: string;
 }
 
 interface BettingAnglesProps {
@@ -150,6 +159,14 @@ const parseBettingData = (raw: string): BestBet[] | null => {
         teamAbbr: b.teamAbbr || b.team || '',
         imageUrl: sanitizeUrl(b.imageUrl || b.logo) || '',
         deepLink: sanitizeUrl(b.deepLink || b.url || b.link) || '',
+        title: b.title,
+        market_price: b.market_price,
+        fair_price: b.fair_price,
+        edge_source: b.edge_source,
+        live_state: b.live_state,
+        risk_flag: b.risk_flag,
+        why_now: b.why_now,
+        invalidation_condition: b.invalidation_condition,
       };
     });
   } catch (e) {
@@ -233,111 +250,167 @@ export const BettingAnglesArtifact: React.FC<BettingAnglesProps> = ({ dataString
   if (!bets || bets.length === 0) return null;
 
   return (
-    <div className="w-full max-w-[640px] mx-auto bg-alabaster border border-clay/60 rounded-xl shadow-glass overflow-hidden font-sans">
-      {/* Structural Top Accent Line */}
-      <div className="h-[2px] w-full bg-gradient-to-r from-bronze/10 via-bronze/40 to-bronze/10" />
+    <>
+      {/* ─── DESKTOP LAYOUT ─── */}
+      <div className="hidden md:block w-full max-w-[640px] mx-auto bg-alabaster border border-clay/60 rounded-xl shadow-glass overflow-hidden font-sans">
+        {/* Structural Top Accent Line */}
+        <div className="h-[2px] w-full bg-gradient-to-r from-bronze/10 via-bronze/40 to-bronze/10" />
 
-      {/* Header Panel */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-clay/30 bg-alabaster select-none">
-        <span className="text-[9px] font-mono tracking-[0.18em] text-taupe font-semibold uppercase">
-          Market Intelligence
-        </span>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-sage/80 animate-pulse" />
-          <span className="text-[9px] font-mono tracking-[0.1em] text-sage font-medium uppercase">
-            Verified
+        {/* Header Panel */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-clay/30 bg-alabaster select-none">
+          <span className="text-[9px] font-mono tracking-[0.18em] text-taupe font-semibold uppercase">
+            Market Intelligence
           </span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-sage/80 animate-pulse" />
+            <span className="text-[9px] font-mono tracking-[0.1em] text-sage font-medium uppercase">
+              Verified
+            </span>
+          </div>
+        </div>
+
+        {/* Bets Stack */}
+        <div className="divide-y divide-clay/20 relative">
+          {bets.map((item, idx) => {
+            // Format American Odds vs Decimal Odds safely
+            const formattedOdds = item.odds > 0 && Number.isInteger(item.odds) ? `+${item.odds}` : item.odds;
+            const compositeKey = `desktop-${item.sport}-${item.game}-${idx}`.replace(/\s+/g, '-');
+            
+            const imgSrc = item.imageUrl || 
+              (item.teamAbbr && item.sport ? getEspnLogoUrl(item.sport, item.teamAbbr) : null) || 
+              resolveLogoFromGame(item.game, item.sport);
+              
+            const destinationUrl = item.deepLink || (item.book ? getBookLink(item.book) : undefined);
+
+            return (
+              <div key={compositeKey} className="relative flex gap-4 p-6 hover:bg-sand/20 transition-colors duration-200 group">
+                
+                {/* Image Thumbnail */}
+                <div className="flex-shrink-0 pt-0.5 relative z-10 pointer-events-none">
+                  <TeamLogo src={imgSrc} alt={item.teamAbbr || item.game} />
+                </div>
+
+                <div className="flex-1 w-full">
+                  {/* Meta & Context Row */}
+                  <div className="flex items-center justify-between gap-4 mb-3 relative z-10 pointer-events-none select-none">
+                    <div className="flex items-center gap-2">
+                      {item.sport && (
+                        <>
+                          <span className="text-[9px] font-mono tracking-widest text-taupe font-semibold uppercase">
+                            {item.sport}
+                          </span>
+                          <span className="text-clay text-[10px]">|</span>
+                        </>
+                      )}
+                      <span className="text-xs font-normal text-taupe/90 tracking-tight line-clamp-1">
+                        {item.game}
+                      </span>
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 ${destinationUrl ? 'group-hover:opacity-80 transition-opacity' : ''}`}>
+                      {item.live_state && (
+                        <span className="text-[10px] font-mono text-emerald font-semibold border border-emerald/30 bg-emerald/10 px-2 py-0.5 rounded-[4px] shadow-sm mr-1">
+                          {item.live_state}
+                        </span>
+                      )}
+                      {item.book && (
+                        <span className="flex items-center gap-1 text-[10px] font-mono text-taupe/80 bg-sand border border-clay/40 px-2 py-0.5 rounded-[4px] shadow-sm">
+                          {item.book}
+                          {destinationUrl && <ExternalLink size={9} className="text-taupe/60" />}
+                        </span>
+                      )}
+                      {item.odds !== 0 && (
+                        <span className="text-[10px] font-mono font-semibold text-charcoal bg-clay/30 border border-clay/60 px-2 py-0.5 rounded-[4px] shadow-sm">
+                          {formattedOdds}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selection Header & Rationale Grid */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1.5 max-w-[90%]">
+                      <h3 className="text-[15px] font-semibold text-ink tracking-tight leading-snug group-hover:text-bronze transition-colors">
+                        {destinationUrl ? (
+                          <a 
+                            href={destinationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="before:absolute before:inset-0 before:z-0 focus-visible:outline-none focus-visible:before:ring-2 focus-visible:before:ring-inset focus-visible:before:ring-bronze/30"
+                          >
+                            <span className="relative z-10">{item.bet}</span>
+                          </a>
+                        ) : (
+                          <span className="relative z-10">{item.bet}</span>
+                        )}
+                      </h3>
+                      
+                      {item.risk_flag ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-3 text-[12px] relative z-10">
+                          <div className="bg-clay/15 border border-clay/40 rounded px-3 py-2">
+                            <span className="block font-mono text-[9px] text-taupe uppercase mb-0.5">Risk Flag</span>
+                            <span className="text-charcoal font-medium leading-tight block">{item.risk_flag}</span>
+                          </div>
+                          <div className="bg-clay/15 border border-clay/40 rounded px-3 py-2">
+                            <span className="block font-mono text-[9px] text-taupe uppercase mb-0.5">Why Now</span>
+                            <span className="text-charcoal font-medium leading-tight block">{item.why_now}</span>
+                          </div>
+                          {item.invalidation_condition && (
+                            <div className="bg-clay/15 border border-clay/40 rounded px-3 py-2 md:col-span-2">
+                              <span className="block font-mono text-[9px] text-taupe uppercase mb-0.5">Invalidation</span>
+                              <span className="text-charcoal font-medium leading-tight block">{item.invalidation_condition}</span>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 md:col-span-2">
+                             {item.market_price && <span className="text-charcoal font-mono text-[10.5px]">Market: {item.market_price}</span>}
+                             {item.fair_price && <span className="text-charcoal font-mono text-[10.5px]">Fair: {item.fair_price}</span>}
+                             {item.edge_source && <span className="text-taupe font-mono text-[9.5px]">Source: {item.edge_source}</span>}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[12.5px] leading-[1.55] text-taupe font-normal antialiased relative z-10 pointer-events-auto">
+                          {item.rationale}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Inline Action */}
+                    <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150 flex-shrink-0 self-start mt-0.5 relative z-20 pointer-events-auto">
+                      <CopyButton
+                        text={`[${item.sport}] ${item.game}\nSelection: ${item.bet} (${formattedOdds} @ ${item.book || 'Book'})\nAnalysis: ${item.rationale}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Bets Stack */}
-      <div className="divide-y divide-clay/20 relative">
+      {/* ─── MOBILE LAYOUT ─── */}
+      <div className="md:hidden flex flex-col gap-4 w-full max-w-md mx-auto p-4 bg-ink min-h-screen pb-[env(safe-area-inset-bottom)]">
         {bets.map((item, idx) => {
-          // Format American Odds vs Decimal Odds safely
-          const formattedOdds = item.odds > 0 && Number.isInteger(item.odds) ? `+${item.odds}` : item.odds;
-          const compositeKey = `${item.sport}-${item.game}-${idx}`.replace(/\s+/g, '-');
+          const compositeKey = `mobile-${item.sport}-${item.game}-${idx}`.replace(/\s+/g, '-');
+          const formattedOdds = item.odds !== 0 ? (item.odds > 0 && Number.isInteger(item.odds) ? `+${item.odds}` : item.odds) : (item.market_price || '');
+          const fairPrice = item.fair_price || '';
+          const title = item.bet || item.title || item.game || 'Market Selection';
+          const whyNow = item.why_now || item.rationale || 'No rationale provided.';
+          const riskFlag = item.risk_flag || item.invalidation_condition || '';
           
-          const imgSrc = item.imageUrl || 
-            (item.teamAbbr && item.sport ? getEspnLogoUrl(item.sport, item.teamAbbr) : null) || 
-            resolveLogoFromGame(item.game, item.sport);
-            
-          const destinationUrl = item.deepLink || (item.book ? getBookLink(item.book) : undefined);
-
           return (
-            <div key={compositeKey} className="relative flex gap-4 p-6 hover:bg-sand/20 transition-colors duration-200 group">
-              
-              {/* Image Thumbnail */}
-              <div className="flex-shrink-0 pt-0.5 relative z-10 pointer-events-none">
-                <TeamLogo src={imgSrc} alt={item.teamAbbr || item.game} />
-              </div>
-
-              <div className="flex-1 w-full">
-                {/* Meta & Context Row */}
-                <div className="flex items-center justify-between gap-4 mb-3 relative z-10 pointer-events-none select-none">
-                  <div className="flex items-center gap-2">
-                    {item.sport && (
-                      <>
-                        <span className="text-[9px] font-mono tracking-widest text-taupe font-semibold uppercase">
-                          {item.sport}
-                        </span>
-                        <span className="text-clay text-[10px]">|</span>
-                      </>
-                    )}
-                    <span className="text-xs font-normal text-taupe/90 tracking-tight line-clamp-1">
-                      {item.game}
-                    </span>
-                  </div>
-
-                  <div className={`flex items-center gap-1.5 ${destinationUrl ? 'group-hover:opacity-80 transition-opacity' : ''}`}>
-                    {item.book && (
-                      <span className="flex items-center gap-1 text-[10px] font-mono text-taupe/80 bg-sand border border-clay/40 px-2 py-0.5 rounded-[4px] shadow-sm">
-                        {item.book}
-                        {destinationUrl && <ExternalLink size={9} className="text-taupe/60" />}
-                      </span>
-                    )}
-                    {item.odds !== 0 && (
-                      <span className="text-[10px] font-mono font-semibold text-charcoal bg-clay/30 border border-clay/60 px-2 py-0.5 rounded-[4px] shadow-sm">
-                        {formattedOdds}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Selection Header & Rationale Grid */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1.5 max-w-[90%]">
-                    <h3 className="text-[15px] font-semibold text-ink tracking-tight leading-snug group-hover:text-bronze transition-colors">
-                      {destinationUrl ? (
-                        <a 
-                          href={destinationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="before:absolute before:inset-0 before:z-0 focus-visible:outline-none focus-visible:before:ring-2 focus-visible:before:ring-inset focus-visible:before:ring-bronze/30"
-                        >
-                          <span className="relative z-10">{item.bet}</span>
-                        </a>
-                      ) : (
-                        <span className="relative z-10">{item.bet}</span>
-                      )}
-                    </h3>
-                    
-                    <p className="text-[12.5px] leading-[1.55] text-taupe font-normal antialiased relative z-10 pointer-events-auto">
-                      {item.rationale}
-                    </p>
-                  </div>
-
-                  {/* Inline Action */}
-                  <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150 flex-shrink-0 self-start mt-0.5 relative z-20 pointer-events-auto">
-                    <CopyButton
-                      text={`[${item.sport}] ${item.game}\nSelection: ${item.bet} (${formattedOdds} @ ${item.book || 'Book'})\nAnalysis: ${item.rationale}`}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <IOSBettingCard 
+              key={compositeKey}
+              title={`${item.sport ? `[${item.sport}] ` : ''}${title}`}
+              marketPrice={formattedOdds}
+              fairPrice={fairPrice}
+              edgeSource={item.edge_source || item.book || 'Market Edge'}
+              whyNow={whyNow}
+              riskFlag={riskFlag}
+            />
           );
         })}
       </div>
-    </div>
+    </>
   );
 };

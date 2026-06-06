@@ -52,12 +52,16 @@ const SafeMailIframe = React.memo(({ html }: { html: string }) => {
   const [height, setHeight] = useState(100);
 
   useEffect(() => {
-    if (!iframeRef.current) return;
-    const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
-    if (!doc) return;
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'resize_email' && e.data?.height) {
+        setHeight(Math.max(e.data.height + 10, 100));
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
-    doc.open();
-    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+  const srcDocHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         margin: 0; padding: 24px 32px;
@@ -81,27 +85,19 @@ const SafeMailIframe = React.memo(({ html }: { html: string }) => {
       pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12.5px; background: rgba(0,0,0,0.04); border-radius: 6px; padding: 2px 6px; }
       pre { padding: 16px; overflow-x: auto; border-radius: 12px; border: 1px solid rgba(0,0,0,0.04); }
       ::selection { background: rgba(0,122,255,0.15); }
-    </style></head><body>${html}</body></html>`);
-    doc.close();
-
-    const resizeObserver = new ResizeObserver(() => {
-      if (doc.body) {
-        setHeight(Math.max(doc.body.scrollHeight + 10, 100));
-      }
-    });
-
-    const timer = setTimeout(() => {
-      if (doc.body) {
-        resizeObserver.observe(doc.body);
-        setHeight(Math.max(doc.body.scrollHeight + 10, 100));
-      }
-    }, 150);
-
-    return () => {
-      clearTimeout(timer);
-      resizeObserver.disconnect();
-    };
-  }, [html]);
+    </style>
+    <script>
+      window.onload = function() {
+        if (window.ResizeObserver) {
+          var ro = new ResizeObserver(function() {
+             window.parent.postMessage({ type: 'resize_email', height: document.body.scrollHeight }, '*');
+          });
+          ro.observe(document.body);
+        }
+        window.parent.postMessage({ type: 'resize_email', height: document.body.scrollHeight }, '*');
+      };
+    </script>
+    </head><body>${html}</body></html>`;
 
   return (
     <motion.iframe
@@ -110,9 +106,10 @@ const SafeMailIframe = React.memo(({ html }: { html: string }) => {
       transition={{ duration: 0.4 }}
       ref={iframeRef}
       title="Email content"
+      srcDoc={srcDocHtml}
       className="w-full border-0 bg-transparent"
       style={{ height: `${height}px`, transition: 'height 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
-      sandbox="allow-same-origin allow-popups"
+      sandbox="allow-popups allow-scripts"
     />
   );
 });

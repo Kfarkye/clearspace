@@ -146,7 +146,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const hasContent = input.trim().length > 0 || !!selectedImage;
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 pb-6">
+    <div className="w-full max-w-3xl mx-auto px-3 sm:px-6 pb-3 sm:pb-6">
       <AnimatePresence>
         {imagePreviewUrl && (
           <motion.div 
@@ -183,7 +183,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           isDragging 
             ? 'border-2 border-dashed border-bronze bg-bronze/5 shadow-glass-hover scale-[1.01]'
             : isFocused 
-              ? 'shadow-glass-hover' 
+              ? 'shadow-glass-hover border border-bronze/30 ring-4 ring-bronze/10' 
               : 'border border-clay/60 shadow-glass'
         }`}
       >
@@ -211,7 +211,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             placeholder="Message Truth…"
             rows={1}
             disabled={isLoading}
-            className="w-full bg-transparent border-0 resize-none focus:ring-0 focus:outline-none text-[14px] text-ink placeholder-taupe/50 py-1 max-h-48 leading-relaxed font-sans no-scrollbar"
+            className="w-full bg-transparent border-0 resize-none focus:ring-0 focus:outline-none text-[16px] sm:text-[14px] text-ink placeholder-taupe/50 py-1 max-h-48 leading-relaxed font-sans no-scrollbar"
           />
         </div>
 

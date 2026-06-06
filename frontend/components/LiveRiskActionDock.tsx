@@ -28,6 +28,9 @@ interface GameTelemetry {
     lastPlay?: string;
     balls?: number;
     strikes?: number;
+    edge_pct_home?: number;
+    edge_pct_away?: number;
+    is_suspended?: boolean;
   };
 }
 
@@ -155,8 +158,16 @@ Format output strictly as a market intelligence briefing using the bettingangles
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={SPRING}
-            className="flex gap-2 overflow-x-auto no-scrollbar mask-fade-right"
+            className="flex gap-2 overflow-x-auto no-scrollbar mask-fade-right items-center"
           >
+            {game.situation?.edge_pct_home != null && (
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-[#007AFF]/10 border border-[#007AFF]/20 rounded-full shrink-0 mr-1 shadow-sm">
+                 <span className="text-[11px] font-mono font-bold text-[#007AFF] tracking-tight">
+                   {game.situation.edge_pct_home > 0 ? game.home_team?.abbr : game.away_team?.abbr} EDGE: {Math.max(game.situation.edge_pct_home, game.situation.edge_pct_away || 0).toFixed(1)}%
+                 </span>
+                 {game.situation.is_suspended && <span className="text-[9px] bg-[#FF3B30] text-white px-1.5 py-0.5 rounded-[4px] uppercase font-bold tracking-widest shadow-sm">SUSPENDED</span>}
+               </div>
+            )}
             <DockPill icon={Calculator} label="Evaluate Position" onClick={() => setShowInput(true)} />
             <DockPill icon={LineChart} label="Matchup Analysis" onClick={() => onAction(`Analyze the matchup between ${matchupName}.`)} />
             <DockPill icon={TrendingUp} label="Live Betting Value" onClick={() => onAction(`What is the live betting value for ${matchupName}?`)} />

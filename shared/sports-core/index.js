@@ -23,14 +23,6 @@ export {
     BoundedCache
 } from './espn-odds.js';
 
-export {
-    fetchAtsRecord,
-    fetchOuRecord,
-    fetchRunlineRecord,
-    fetchMoneylineRecord,
-    generateBettingAngles,
-    applyAtsFilters
-} from './agents.js';
 
 export {
     governSportsArtifact,

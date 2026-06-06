@@ -23,6 +23,7 @@ const DashboardView: React.FC = () => {
     setIsSidebarOpen,
     loadConversation,
     conversationId,
+    executionPhase,
     isGitHubConnected,
     githubUser,
     handleConnectGitHub,
@@ -40,6 +41,7 @@ const DashboardView: React.FC = () => {
         onThinkingModeChange={setThinkingMode}
         workspaceToken={workspaceToken}
         onRetrySave={retryFailedSaves}
+        executionPhase={executionPhase}
       />
       
       <ConversationSidebar
@@ -51,6 +53,10 @@ const DashboardView: React.FC = () => {
         githubUser={githubUser}
         onConnectGitHub={handleConnectGitHub}
         onDisconnectGitHub={handleDisconnectGitHub}
+        onSyncRepo={(repo) => {
+          handleSendMessage(`Sync repository context: ${repo}`);
+          setIsSidebarOpen(false);
+        }}
       />
     </>
   );

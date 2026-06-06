@@ -24,13 +24,13 @@ const Layout: React.FC = () => {
   const isChat = location.pathname === '/';
 
   return (
-    <div className="relative flex h-screen w-screen bg-sand text-charcoal font-sans overflow-hidden justify-center">
+    <div className="relative flex h-[100dvh] max-w-[100vw] bg-sand text-charcoal font-sans overflow-hidden justify-center pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
       {/* Ambient Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,249,246,1)_0%,transparent_100%)] pointer-events-none z-0" />
 
       <div className="relative w-full max-w-3xl flex flex-col h-full z-10">
         {/* ─── Floating Glass Header ─────────────────────────────── */}
-        <header className="absolute top-0 left-0 right-0 h-14 px-6 flex items-center justify-between bg-alabaster/50 backdrop-blur-2xl z-50 border-b border-white/40 shadow-[0_4px_24px_rgba(140,122,107,0.03)]">
+        <header className="absolute top-0 left-0 right-0 h-14 px-4 sm:px-6 flex items-center justify-between bg-alabaster/50 backdrop-blur-2xl z-50 border-b border-white/40 shadow-[0_4px_24px_rgba(140,122,107,0.03)]">
           {/* Left: Status + Brand */}
           <div className="flex items-center gap-3 w-1/3">
             <NavLink to="/" className="flex items-center gap-3 group">
@@ -99,7 +99,7 @@ const Layout: React.FC = () => {
             {isChat && !isWorkspaceConnected && (
               <button 
                 onClick={handleConnectWorkspace}
-                className="hidden sm:flex relative items-center justify-center px-3 h-7 rounded-full backdrop-blur-xl border bg-white/40 border-white/50 text-taupe hover:text-charcoal hover:bg-white/60 shadow-btn transition-all duration-300 active:scale-95 group"
+                className="relative flex items-center justify-center px-3 h-7 rounded-full backdrop-blur-xl border bg-white/40 border-white/50 text-taupe hover:text-charcoal hover:bg-white/60 shadow-btn transition-all duration-300 active:scale-95 group"
                 title="Connect Workspace"
               >
                 <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
@@ -131,9 +131,9 @@ const Layout: React.FC = () => {
         </header>
 
         {/* ─── Routed Content ────────────────────────────────────── */}
-        <div className="flex-1 overflow-hidden pt-14">
+        <main className="flex-1 h-full w-full overflow-y-auto overflow-x-hidden overscroll-y-contain pt-14 pb-[env(safe-area-inset-bottom)]">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

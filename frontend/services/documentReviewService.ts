@@ -11,7 +11,7 @@
  */
 
 import { GoogleGenAI, Type } from '@google/genai';
-import { MODEL_ID } from '../constants';
+import { MODEL_ID } from '../config/model';
 
 
 

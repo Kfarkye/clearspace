@@ -2,6 +2,8 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
+  fallbackRender?: (props: { error: Error; resetErrorBoundary: () => void }) => ReactNode;
+  onReset?: () => void;
 }
 
 interface State {
@@ -25,11 +27,19 @@ class ErrorBoundary extends Component<Props, State> {
 
   handleReset = () => {
     this.setState({ hasError: false, error: null });
-    window.location.reload();
+    if (this.props.onReset) {
+      this.props.onReset();
+    } else {
+      window.location.reload();
+    }
   };
 
   render() {
-    if (this.state.hasError) {
+    if (this.state.hasError && this.state.error) {
+      if (this.props.fallbackRender) {
+        return this.props.fallbackRender({ error: this.state.error, resetErrorBoundary: this.handleReset });
+      }
+
       return (
         <div style={{
           display: 'flex',

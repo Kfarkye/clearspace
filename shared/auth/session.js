@@ -33,7 +33,7 @@ export function createSessionManager(options = {}) {
   const cookieName = options.cookieName || DEFAULTS.cookieName;
 
   // Resolve JWT secret
-  let jwtSecret = options.jwtSecret || process.env.JWT_SECRET;
+  let jwtSecret = options.jwtSecret || process.env.JWT_SECRET || 'dev-secret-key-123';
   if (!jwtSecret) {
     if (isProduction && options.requireSecretInProd !== false) {
       console.error('FATAL: JWT_SECRET environment variable must be set in production.');

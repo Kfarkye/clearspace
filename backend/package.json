@@ -6,11 +6,12 @@
   "description": "Node backend for proxying Google Cloud API requests",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.env.local server.js",
-    "dev": "nodemon --env-file=.env.local server.js"
+    "start": "tsx --env-file=.env.local server.js",
+    "dev": "tsx watch --env-file=.env.local server.js"
   },
   "dependencies": {
     "@google-cloud/spanner": "^8.7.1",
+    "@google-cloud/vertexai": "^1.12.0",
     "@google/genai": "^2.8.0",
     "@octokit/rest": "^22.0.1",
     "cookie-parser": "^1.4.7",
@@ -21,11 +22,17 @@
     "google-auth-library": "^10.5.0",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
     "ws": "^8.18.0",
+    "yt-search": "^2.13.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^25.2.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.2",
     "nodemon": "^3.1.11"
   }
 }

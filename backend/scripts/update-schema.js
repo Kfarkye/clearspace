@@ -92,7 +92,39 @@ const statements = [
     win_rate           NUMERIC,
     updated_at         TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
   ) PRIMARY KEY(league_id, team_code, period),
-    INTERLEAVE IN PARENT teams ON DELETE CASCADE`
+    INTERLEAVE IN PARENT teams ON DELETE CASCADE`,
+  `CREATE TABLE live_snapshots (
+    league_id          STRING(32) NOT NULL,
+    match_id           STRING(36) NOT NULL,
+    captured_at        TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
+    state_timestamp    TIMESTAMP,
+    inning_number      INT64 NOT NULL,
+    inning_half        STRING(6) NOT NULL,
+    outs               INT64 NOT NULL,
+    balls              INT64 NOT NULL,
+    strikes            INT64 NOT NULL,
+    home_score         INT64 NOT NULL,
+    away_score         INT64 NOT NULL,
+    on_first           BOOL NOT NULL,
+    on_second          BOOL NOT NULL,
+    on_third           BOOL NOT NULL,
+    pitcher_id         STRING(36),
+    pitcher_name       STRING(128),
+    pitcher_throws     STRING(1),
+    batter_id          STRING(36),
+    batter_name        STRING(128),
+    batter_stance      STRING(1),
+    market_timestamp   TIMESTAMP,
+    is_suspended       BOOL NOT NULL,
+    home_ml_dk         INT64,
+    away_ml_dk         INT64,
+    dk_implied_no_vig  NUMERIC,
+    home_prob_poly     NUMERIC,
+    away_prob_poly     NUMERIC,
+    edge_pct_home      NUMERIC,
+    edge_pct_away      NUMERIC
+  ) PRIMARY KEY(league_id, match_id, captured_at),
+    INTERLEAVE IN PARENT matches ON DELETE CASCADE`
 ];
 
 async function applyDdl(databaseName) {

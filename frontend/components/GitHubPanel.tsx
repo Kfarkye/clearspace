@@ -103,7 +103,7 @@ const FileTreeNode = memo(({ node, depth, onToggle, onFileClick }: any) => {
 });
 FileTreeNode.displayName = 'FileTreeNode';
 
-export const GitHubPanel: React.FC<{ isConnected?: boolean; username?: string; onConnect?: () => void; onDisconnect?: () => void }> = ({ isConnected, username, onConnect, onDisconnect }) => {
+export const GitHubPanel: React.FC<{ isConnected?: boolean; username?: string; onConnect?: () => void; onDisconnect?: () => void; onSyncRepo?: (repo: string) => void }> = ({ isConnected, username, onConnect, onDisconnect, onSyncRepo }) => {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
   const [tree, setTree] = useState<TreeNode[]>([]);
@@ -182,7 +182,12 @@ export const GitHubPanel: React.FC<{ isConnected?: boolean; username?: string; o
               <button onClick={() => { setSelectedRepo(null); setTree([]); }} className="p-1 rounded-md text-black/40 hover:text-black/80 hover:bg-black/5 transition-all outline-none">
                 <ChevronLeft size={16} strokeWidth={2.5} />
               </button>
-              <span className="text-[13px] text-[#1D1D1F] font-semibold tracking-tight truncate">{selectedRepo.split('/')[1]}</span>
+              <span className="text-[13px] text-[#1D1D1F] font-semibold tracking-tight truncate flex-1">{selectedRepo.split('/')[1]}</span>
+              {onSyncRepo && (
+                <button onClick={() => onSyncRepo(selectedRepo)} className="text-[10px] font-semibold text-[#007AFF] hover:text-[#007AFF]/80 bg-[#007AFF]/10 px-2.5 py-1.5 rounded-md transition-colors uppercase tracking-wider">
+                  Sync Context
+                </button>
+              )}
             </div>
             <div className="flex-1 overflow-y-auto no-scrollbar py-2">
               {tree.length === 0 ? (

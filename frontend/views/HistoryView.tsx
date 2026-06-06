@@ -149,14 +149,21 @@ const HistoryView: React.FC = () => {
                 <div className="space-y-1">
                   <AnimatePresence mode="popLayout">
                     {group.items.map(conv => (
-                      <motion.button
+                      <motion.div
                         key={conv.conversationId}
                         layout
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleSelect(conv.conversationId)}
-                        className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-200 border ${
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleSelect(conv.conversationId);
+                          }
+                        }}
+                        className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-200 border cursor-pointer ${
                           conv.conversationId === conversationId
                             ? 'bg-white/80 border-bronze/20 shadow-glass'
                             : 'bg-white/40 border-transparent hover:bg-white/70 hover:border-white/60 hover:shadow-glass-sm'
@@ -197,7 +204,7 @@ const HistoryView: React.FC = () => {
                             {conv.messageCount} messages
                           </span>
                         </div>
-                      </motion.button>
+                      </motion.div>
                     ))}
                   </AnimatePresence>
                 </div>

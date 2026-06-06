@@ -20,9 +20,12 @@ import { ScoreboardArtifact } from './ScoreboardArtifact';
 import { DataTableArtifact } from './DataTableArtifact';
 import { LicensingArtifact } from './LicensingArtifact';
 import { WorldCupArtifact } from './WorldCupArtifact';
+import { WorldCupGroupArtifact } from './WorldCupGroupArtifact';
 import { AuraYouTube } from './AuraYouTube';
+import { YouTubeMediaCard } from './YouTubeMediaCard';
 import { MatchupResearchArtifact } from './MatchupResearchArtifact';
 import { EmailViewerArtifact } from './EmailViewerArtifact';
+import { PlayerPropArtifact } from './PlayerPropArtifact';
 
 interface AuraChatProps {
   messages: Message[];
@@ -41,6 +44,26 @@ const THINK_REGEX = /<think>([\s\S]*?)(?:<\/think>|$)/gi;
 const SPRING_TRANSITION = { type: 'spring' as const, bounce: 0, duration: 0.5, mass: 0.8, damping: 18 };
 const MICRO_SPRING = { type: 'spring' as const, bounce: 0, duration: 0.3, damping: 15 };
 
+const AuraYouTubeWrapper: React.FC<{ dataString: string }> = ({ dataString }) => {
+  try {
+    const match = dataString.match(/```[a-zA-Z_]*\n([\s\S]*?)(?:```|$)/);
+    let clean = match ? match[1] : dataString;
+    clean = clean.trim().replace(/,\s*([\]}])/g, '$1');
+    const parsed = JSON.parse(clean);
+    if (parsed && parsed.query && (!parsed.videos || parsed.videos.length === 0)) {
+      return <YouTubeMediaCard query={parsed.query} />;
+    }
+  } catch (e) {
+    return (
+      <div className="w-full bg-[#18181A] border border-[#C45C5C]/50 p-4 flex flex-col gap-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] rounded-2xl">
+        <span className="font-mono text-xs text-[#C45C5C] uppercase tracking-widest">Render Fault</span>
+        <span className="font-sans text-sm text-taupe">Failed to parse media payload.</span>
+      </div>
+    );
+  }
+  return <AuraYouTube dataString={dataString} />;
+};
+
 // BUG FIX: Artifact matchers use dual-key safety (original strict matchers preserved)
 const ARTIFACT_REGISTRY = [
   { id: 'scoreboard', match: (l: string, c: string) => l.includes('scoreboard') || (c.includes('"games"') && c.includes('"summary_markdown"')), component: ScoreboardArtifact },
@@ -53,8 +76,10 @@ const ARTIFACT_REGISTRY = [
   { id: 'codesandbox', match: (l: string, c: string) => l.includes('codesandbox') || c.includes('"explanation_markdown"'), component: CodeSandboxArtifact },
   { id: 'datatable', match: (l: string, c: string) => l.includes('datatable') || (c.includes('"columns"') && c.includes('"rows"')), component: DataTableArtifact },
   { id: 'licensing', match: (l: string, c: string) => l.includes('licensing') || (c.includes('"profession"') && c.includes('"requirements"') && c.includes('"state"')), component: LicensingArtifact },
+  { id: 'world_cup_group', match: (l: string, c: string) => l.includes('world_cup_group') || (c.includes('"event_name"') && c.includes('"group_name"') && c.includes('"teams"')), component: WorldCupGroupArtifact },
   { id: 'world_cup_profile', match: (l: string, c: string) => l.includes('world_cup') || (c.includes('"tactical_outlook"') && c.includes('"team"') && c.includes('"key_players"')), component: WorldCupArtifact },
-  { id: 'youtube_media', match: (l: string, c: string) => l.includes('youtube') || (c.includes('"videos"') && (c.includes('"thumbnail"') || c.includes('"videoId"'))), component: AuraYouTube },
+  { id: 'youtube_media', match: (l: string, c: string) => l.includes('youtube') || (c.includes('"videos"') && (c.includes('"thumbnail"') || c.includes('"videoId"'))) || (c.includes('"query"') && (c.includes('youtube') || c.includes('video') || c.includes('media') || c.includes('youtube_media'))), component: AuraYouTubeWrapper },
+  { id: 'playerprops', match: (l: string, c: string) => l.includes('playerprops') || (c.includes('"gameId"') && c.includes('"props"') && c.includes('"playerId"')), component: PlayerPropArtifact },
   { id: 'html', match: (l: string, c: string) => l === 'html' && c.trim().startsWith('<'), component: HtmlArtifact as any }
 ];
 

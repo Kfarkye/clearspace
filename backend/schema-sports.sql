@@ -230,3 +230,45 @@ CREATE TABLE lineup_projections (
   updated_at           TIMESTAMP,
 ) PRIMARY KEY(league_id, match_id, lineup_id),
   INTERLEAVE IN PARENT matches ON DELETE CASCADE;
+
+-- Live Snapshots: Interleaved under Matches for chronological locality
+CREATE TABLE live_snapshots (
+  league_id          STRING(32) NOT NULL,
+  match_id           STRING(36) NOT NULL,
+  captured_at        TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
+  
+  -- Game State (Normalized for ML)
+  state_timestamp    TIMESTAMP,
+  inning_number      INT64 NOT NULL,
+  inning_half        STRING(6) NOT NULL,  -- 'top' or 'bottom'
+  outs               INT64 NOT NULL,
+  balls              INT64 NOT NULL,
+  strikes            INT64 NOT NULL,
+  home_score         INT64 NOT NULL,
+  away_score         INT64 NOT NULL,
+  
+  -- Bases (Explicit booleans for indexing/feature extraction)
+  on_first           BOOL NOT NULL,
+  on_second          BOOL NOT NULL,
+  on_third           BOOL NOT NULL,
+  
+  -- Matchup Context
+  pitcher_id         STRING(36),
+  pitcher_name       STRING(128),
+  pitcher_throws     STRING(1),           -- 'R' or 'L'
+  batter_id          STRING(36),
+  batter_name        STRING(128),
+  batter_stance      STRING(1),           -- 'R', 'L', 'S'
+  
+  -- Market Data
+  market_timestamp   TIMESTAMP,
+  is_suspended       BOOL NOT NULL,       -- TRUE if book lines are locked
+  home_ml_dk         INT64,               -- American Odds (e.g. -150, +130)
+  away_ml_dk         INT64,
+  dk_implied_no_vig  NUMERIC,             -- De-vigged sportsbook probability
+  home_prob_poly     NUMERIC,             -- Polymarket implied %
+  away_prob_poly     NUMERIC,
+  edge_pct_home      NUMERIC,             -- (Prediction_Market_Prob - dk_implied_no_vig)
+  edge_pct_away      NUMERIC
+) PRIMARY KEY(league_id, match_id, captured_at),
+  INTERLEAVE IN PARENT matches ON DELETE CASCADE;

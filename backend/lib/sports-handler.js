@@ -12,6 +12,8 @@ import {
   governSportsArtifact,
 } from '@clearspace/sports-core';
 
+import * as spannerDAL from '../services/db.js';
+
 const CONFIG = {
   LOG_PREFIX: '[CHAT:SPORTS]',
   MAPS: {
@@ -45,42 +47,84 @@ const CONFIG = {
 // ============================================================================
 const requestCache = new Map();
 
-async function fetchWithCache(url, timeoutMs, ttlMs = 15000) {
+async function fetchWithCache(url, timeoutMs, ttlMs = 15000, maxRetries = 3) {
   const now = Date.now();
 
+  let stalePromise = null;
   // Return existing promise if within TTL (Prevents Cache Stampedes)
   if (requestCache.has(url)) {
     const cached = requestCache.get(url);
-    if (now < cached.expiresAt) return cached.promise;
+    if (now < cached.expiresAt) {
+      // P3 FIX: True LRU behavior — re-insert on hit to bump to tail
+      requestCache.delete(url);
+      requestCache.set(url, cached);
+      return cached.promise;
+    }
+    // Save the expired, stale promise for fallback in case the new fetch fails
+    stalePromise = cached.promise;
   }
 
   const fetchPromise = (async () => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(id);
-      
-      if (!response.ok) {
-        if (response.status === 429) console.warn(`${CONFIG.LOG_PREFIX} Rate limited by ${new URL(url).hostname}`);
-        return null; // A cached null provides a natural circuit-breaker/backoff
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.warn(`${CONFIG.LOG_PREFIX} Rate limited by ${new URL(url).hostname}`);
+            break; // Don't retry on 429, fail fast
+          }
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        clearTimeout(id);
+        attempt++;
+        if (error.name !== 'AbortError') {
+          console.warn(`${CONFIG.LOG_PREFIX} Fetch fault for ${url.split('?')[0]} (Attempt ${attempt}/${maxRetries}):`, error.message);
+        } else {
+          console.warn(`${CONFIG.LOG_PREFIX} Fetch timeout for ${url.split('?')[0]} (Attempt ${attempt}/${maxRetries})`);
+        }
+        
+        if (attempt < maxRetries) {
+          // Exponential backoff with jitter
+          const backoff = Math.pow(2, attempt) * 200 + Math.random() * 100;
+          await new Promise(resolve => setTimeout(resolve, backoff));
+        }
       }
-      return await response.json();
-    } catch (error) {
-      clearTimeout(id);
-      if (error.name !== 'AbortError') {
-        console.warn(`${CONFIG.LOG_PREFIX} Fetch fault for ${url.split('?')[0]}:`, error.message);
-      }
-      return null;
     }
+
+    // GRACEFUL DEGRADATION: Secondary cache-fallback mechanism
+    if (stalePromise) {
+      console.warn(`${CONFIG.LOG_PREFIX} Exhausted retries for ${url.split('?')[0]}. Falling back to stale cache.`);
+      try {
+        const staleData = await stalePromise;
+        if (staleData) return staleData;
+      } catch (e) { /* fallthrough */ }
+    }
+
+    return null; // A cached null provides a natural circuit-breaker/backoff
   })();
 
   requestCache.set(url, { promise: fetchPromise, expiresAt: now + ttlMs });
 
-  // Prevent memory leaks by occasionally clearing stale cache keys
+  // Prevent memory leaks by clearing stale cache keys
+  // P3 FIX: LRU eviction logic instead of FIFO
   if (requestCache.size > CONFIG.CACHE.MAX_SIZE) {
     for (const [key, val] of requestCache.entries()) {
-      if (now > val.expiresAt) requestCache.delete(key);
+      if (now > val.expiresAt + (ttlMs * 10)) { // Keep strictly stale entries around a bit longer for fallback
+        requestCache.delete(key);
+      }
+    }
+    // If still oversized after pruning stale entries, delete the oldest
+    if (requestCache.size > CONFIG.CACHE.MAX_SIZE) {
+      const firstKey = requestCache.keys().next().value;
+      requestCache.delete(firstKey);
     }
   }
 
@@ -326,6 +370,43 @@ export async function handleSportsQuery(rawParams) {
       const homeScore = parseInt(homeComp.score, 10);
       const awayScore = parseInt(awayComp.score, 10);
 
+      // --- LIVE DATA ENRICHMENT (Gap 1 & Gap 3) ---
+      let spannerEdge = null;
+      if (isLive) {
+        // Gap 1: Fetch summary to get full situation
+        try {
+          const sumUrl = `https://site.api.espn.com/apis/site/v2/sports/${ESPN_SPORT_MAP[safeLeague] || 'baseball'}/${safeLeague}/summary?event=${game.id}`;
+          const summaryData = await fetchWithCache(sumUrl, 5000, 10000); // 10s TTL for live
+          if (summaryData && summaryData.header && summaryData.header.competitions && summaryData.header.competitions[0]) {
+             const sumComp = summaryData.header.competitions[0];
+             if (sumComp.situation) {
+               comp.situation = sumComp.situation;
+             }
+          }
+        } catch (e) {
+          console.error('[SPORTS] Failed to fetch live summary for', game.id, e.message);
+        }
+
+        // Gap 3: Fetch edge from Spanner
+        try {
+          const db = spannerDAL._getDatabase();
+          if (db) {
+            const [rows] = await db.run({
+              sql: `SELECT edge_pct_home, edge_pct_away, is_suspended, home_prob_poly, away_prob_poly, dk_implied_no_vig 
+                    FROM live_snapshots 
+                    WHERE match_id = @matchId 
+                    ORDER BY captured_at DESC LIMIT 1`,
+              params: { matchId: game.id },
+            });
+            if (rows && rows.length > 0) {
+              spannerEdge = rows[0].toJSON();
+            }
+          }
+        } catch (e) {
+          console.error('[SPORTS] Failed to fetch Spanner edge for', game.id, e.message);
+        }
+      }
+
       // --- Odds Extraction ---
       let odds = null;
       if (fetchOdds) {
@@ -453,6 +534,38 @@ export async function handleSportsQuery(rawParams) {
       const bestHome = pickBestBook(books, 'home');
       const bestAway = pickBestBook(books, 'away');
 
+      let live_situation = undefined;
+      if (isLive && comp.situation) {
+        live_situation = {
+          inning_number: comp.status?.period,
+          inning_half: comp.status?.type?.shortDetail?.toLowerCase().includes('bot') ? 'bottom' : 'top',
+          outs: comp.situation.outs || 0,
+          balls: comp.situation.balls || 0,
+          strikes: comp.situation.strikes || 0,
+          bases: {
+            on_first: !!comp.situation.onFirst,
+            on_second: !!comp.situation.onSecond,
+            on_third: !!comp.situation.onThird
+          },
+          pitcher: comp.situation.pitcher?.athlete ? {
+            pitcher_id: comp.situation.pitcher.athlete.id,
+            name: comp.situation.pitcher.athlete.displayName,
+            pitch_count: comp.situation.pitcher.stats?.[0] || 0,
+          } : undefined,
+          batter: comp.situation.batter?.athlete ? {
+            batter_id: comp.situation.batter.athlete.id,
+            name: comp.situation.batter.athlete.displayName,
+          } : undefined,
+          // Spanner Edge Fields
+          edge_pct_home: spannerEdge?.edge_pct_home || null,
+          edge_pct_away: spannerEdge?.edge_pct_away || null,
+          is_suspended: spannerEdge?.is_suspended || false,
+          dk_implied_no_vig: spannerEdge?.dk_implied_no_vig || null,
+          home_prob_poly: spannerEdge?.home_prob_poly || null,
+          away_prob_poly: spannerEdge?.away_prob_poly || null,
+        };
+      }
+
       const eventData = {
         game_id: game.id,
         status: comp.status?.type?.name,
@@ -475,6 +588,7 @@ export async function handleSportsQuery(rawParams) {
           homeWinPct: Math.round((comp.predictor.homeTeam?.gameProjection || 0) * 10) / 10,
           awayWinPct: Math.round((comp.predictor.awayTeam?.gameProjection || 0) * 10) / 10,
         } : undefined,
+        live_situation,
       };
 
       // GRACEFUL DEGRADATION: If ESPN injury API throws a 502, the scoreboard payload still safely renders.

@@ -319,7 +319,7 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
           {game.leaders.map((p, i) => (
             <div key={i} className="flex items-center gap-2.5 shrink-0 pr-2">
               <div className="w-8 h-8 rounded-full bg-[#F5F5F7] border border-black/[0.04] overflow-hidden flex items-end justify-center shrink-0">
-                {p.headshotUrl ? <img src={p.headshotUrl} alt={p.name} className="w-[90%] h-[90%] object-cover object-bottom" loading="lazy" /> : <User size={16} className="text-black/20 mb-1" />}
+                {p.headshotUrl ? <><img src={p.headshotUrl} alt={p.name} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} className="w-[90%] h-[90%] object-cover object-bottom" loading="lazy" /><User size={16} className="text-black/20 mb-1 hidden" /></> : <User size={16} className="text-black/20 mb-1" />}
               </div>
               <div className="flex flex-col">
                 <span className="text-[11.5px] font-semibold text-[#1D1D1F] tracking-tight">{p.name}</span>
@@ -390,6 +390,7 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
           broadcast: ev.broadcast,
           note: ev.series_summary || ev.game_notes || ev.note || '',
           league: ev.league || raw.league || 'mlb',
+          situation: ev.situation || ev.live_situation,
           away_team: normalizeTeam(ev.away_team, oddsObj, false),
           home_team: normalizeTeam(ev.home_team, oddsObj, true),
         };
@@ -567,7 +568,7 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
           </div>
           <div>
             <h3 className="text-[15px] font-semibold text-[#1D1D1F] tracking-tight leading-none mb-1.5">Scoreboard</h3>
-            <p className="text-[10px] font-semibold text-black/40 uppercase tracking-[0.18em] leading-none">
+            <p className="text-[10px] font-semibold text-black/60 uppercase tracking-[0.18em] leading-none">
               {liveGames.length > 0 ? 'Live Telemetry Active' : 'Schedule & Results'}
             </p>
           </div>
@@ -593,7 +594,7 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
 
         {liveGames.length > 0 && (
           <div className="space-y-4">
-            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] px-1">In Progress</h4>
+            <h4 className="text-[11px] font-bold text-black/50 uppercase tracking-[0.18em] px-1">In Progress</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <AnimatePresence mode="popLayout">
                 {liveGames.map(game => <GameDisplay key={game.id} game={game} isHero={true} onAction={onAction} />)}
@@ -604,7 +605,7 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
 
         {scheduledGames.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">Upcoming</h4>
+            <h4 className="text-[11px] font-bold text-black/50 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">Upcoming</h4>
             <div className="px-4 bg-[#F9F9F9]/50 rounded-[24px]">
               {scheduledGames.map(game => <GameDisplay key={game.id} game={game} isHero={false} onAction={onAction} />)}
             </div>
@@ -613,7 +614,7 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
 
         {finalGames.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-[11px] font-bold text-black/30 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">Final</h4>
+            <h4 className="text-[11px] font-bold text-black/50 uppercase tracking-[0.18em] border-b border-black/[0.04] pb-3 px-1 mb-3">Final</h4>
             <div className="px-4 bg-[#F9F9F9]/50 rounded-[24px]">
               {finalGames.map(game => <GameDisplay key={game.id} game={game} isHero={false} onAction={onAction} />)}
             </div>

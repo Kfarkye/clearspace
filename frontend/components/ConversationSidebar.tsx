@@ -21,6 +21,7 @@ interface ConversationSidebarProps {
   githubUser?: string;
   onConnectGitHub?: () => void;
   onDisconnectGitHub?: () => void;
+  onSyncRepo?: (repo: string) => void;
 }
 
 /** Relative time — minimal, lowercase, no "ago". */
@@ -95,6 +96,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   githubUser,
   onConnectGitHub,
   onDisconnectGitHub,
+  onSyncRepo,
 }) => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -232,6 +234,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                   username={githubUser}
                   onConnect={onConnectGitHub}
                   onDisconnect={onDisconnectGitHub}
+                  onSyncRepo={onSyncRepo}
                 />
               </div>
             ) : (

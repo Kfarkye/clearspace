@@ -130,33 +130,41 @@ export const HtmlArtifact: React.FC<HtmlArtifactProps> = ({
     }
   }, [dataString, workspaceToken, title]);
 
-  // Auto-resize iframe
-  const adjustIframeHeight = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    try {
-      const doc = iframe.contentDocument;
-      if (doc && doc.body) {
-        const height = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
-        setIframeHeight(Math.max(100, Math.min(height + 20, expanded ? 2000 : 600)));
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'resize_html' && e.data?.height) {
+        setIframeHeight(Math.max(100, Math.min(e.data.height + 20, expanded ? 2000 : 600)));
       }
-    } catch {
-      setIframeHeight(expanded ? 2000 : 600);
-    }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, [expanded]);
 
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    const handleLoad = () => setTimeout(adjustIframeHeight, 100);
-    iframe.addEventListener('load', handleLoad);
-    adjustIframeHeight();
-    return () => iframe.removeEventListener('load', handleLoad);
-  }, [expanded, dataString, adjustIframeHeight]);
+  const styledSrcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{margin:0;padding:0;overflow-x:hidden}img{max-width:100%;height:auto;display:block}</style>
+  <script>
+    // Inject AURA Context into the Artifact Sandbox
+    window.AURA_ARTIFACT_ID = "ephemeral_html";
+    window.executeAuraCommand = (domain, payload) => {
+      window.parent.postMessage({ 
+        type: 'AURA_EXECUTE', 
+        domain, 
+        payload, 
+        artifactId: "ephemeral_html" 
+      }, '*');
+    };
+    window.onload = function() {
+      if (window.ResizeObserver) {
+        var ro = new ResizeObserver(function() {
+           window.parent.postMessage({ type: 'resize_html', height: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) }, '*');
+        });
+        ro.observe(document.body);
+      }
+      window.parent.postMessage({ type: 'resize_html', height: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) }, '*');
+    };
+  </script>
+  </head><body>${dataString}</body></html>`;
 
-  const styledSrcdoc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{margin:0;padding:0;overflow-x:hidden}img{max-width:100%;height:auto;display:block}</style></head><body>${dataString}</body></html>`;
-
-  const defaultSandbox = "allow-popups allow-forms allow-modals allow-pointer-lock allow-downloads allow-orientation-lock allow-presentation allow-top-navigation-by-user-activation";
+  const defaultSandbox = "allow-popups allow-forms allow-modals allow-pointer-lock allow-downloads allow-orientation-lock allow-presentation allow-top-navigation-by-user-activation allow-scripts";
   const effectiveSandbox = sandboxPermissions || defaultSandbox;
 
   // Format labels for the "Open" link

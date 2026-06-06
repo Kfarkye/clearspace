@@ -48,4 +48,4 @@ ENV NODE_ENV=production
 
 EXPOSE 8080
 
-CMD ["node", "backend/server.js"]
+CMD ["npx", "tsx", "backend/server.js"]
