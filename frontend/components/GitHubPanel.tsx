@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Folder, FolderOpen, FileCode, FileText, FileJson, ChevronRight, ChevronLeft, Lock } from 'lucide-react';
+import { Folder, FolderOpen, FileCode, FileText, FileJson, ChevronRight, ChevronLeft, Lock, Copy, Check, Send } from 'lucide-react';
 
 // Github icon removed from lucide-react in recent versions — inline SVG
 const Github = ({ size = 24, className = '' }: { size?: number; className?: string }) => (
@@ -45,8 +45,9 @@ const getFileIcon = (name: string) => {
   return <FileCode size={13} className="text-black/30" />;
 };
 
-const FileViewer = memo(({ owner, repo, filePath, sha, onBack }: any) => {
+const FileViewer = memo(({ owner, repo, filePath, sha, onBack, onInjectFile }: any) => {
   const [content, setContent] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +66,31 @@ const FileViewer = memo(({ owner, repo, filePath, sha, onBack }: any) => {
         <button onClick={onBack} className="p-1 rounded-md text-black/40 hover:text-black/80 hover:bg-black/5 transition-all outline-none">
           <ChevronLeft size={16} strokeWidth={2.5} />
         </button>
-        <span className="text-[12px] text-[#1D1D1F]/80 truncate font-mono font-medium tracking-tight">{filePath}</span>
+        <span className="text-[12px] text-[#1D1D1F]/80 truncate font-mono font-medium tracking-tight flex-1">{filePath}</span>
+        {content && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onInjectFile && (
+              <button 
+                onClick={() => onInjectFile(filePath, content)}
+                className="flex items-center gap-1.5 text-[10px] font-semibold text-[#007AFF] hover:text-[#007AFF]/80 bg-[#007AFF]/10 px-2 py-1 rounded-md transition-colors uppercase tracking-wider"
+              >
+                <Send size={12} />
+                Inject
+              </button>
+            )}
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(content);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="flex items-center gap-1.5 text-[10px] font-semibold text-black/60 hover:text-black bg-black/5 px-2 py-1 rounded-md transition-colors uppercase tracking-wider"
+            >
+              {copied ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        )}
       </div>
       <div className="flex-1 overflow-auto p-5 pb-10 no-scrollbar">
         {!content ? (
@@ -103,7 +128,7 @@ const FileTreeNode = memo(({ node, depth, onToggle, onFileClick }: any) => {
 });
 FileTreeNode.displayName = 'FileTreeNode';
 
-export const GitHubPanel: React.FC<{ isConnected?: boolean; username?: string; onConnect?: () => void; onDisconnect?: () => void; onSyncRepo?: (repo: string) => void }> = ({ isConnected, username, onConnect, onDisconnect, onSyncRepo }) => {
+export const GitHubPanel: React.FC<{ isConnected?: boolean; username?: string; onConnect?: () => void; onDisconnect?: () => void; onSyncRepo?: (repo: string) => void; onInjectFile?: (path: string, content: string) => void; }> = ({ isConnected, username, onConnect, onDisconnect, onSyncRepo, onInjectFile }) => {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
   const [tree, setTree] = useState<TreeNode[]>([]);
@@ -175,7 +200,7 @@ export const GitHubPanel: React.FC<{ isConnected?: boolean; username?: string; o
     <div className="flex flex-col h-full relative overflow-hidden bg-white">
       <AnimatePresence mode="wait">
         {viewingFile && selectedRepo ? (
-          <FileViewer key="viewer" owner={selectedRepo.split('/')[0]} repo={selectedRepo.split('/')[1]} filePath={viewingFile.path} sha={viewingFile.sha} onBack={() => setViewingFile(null)} />
+          <FileViewer key="viewer" owner={selectedRepo.split('/')[0]} repo={selectedRepo.split('/')[1]} filePath={viewingFile.path} sha={viewingFile.sha} onBack={() => setViewingFile(null)} onInjectFile={onInjectFile} />
         ) : selectedRepo ? (
           <motion.div key="tree" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={SPRING} className="flex flex-col h-full absolute inset-0 bg-[#FAFAFC]">
             <div className="px-4 py-3 flex items-center gap-3 border-b border-black/[0.04] bg-white/80 backdrop-blur-md sticky top-0 z-10">

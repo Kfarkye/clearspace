@@ -22,6 +22,7 @@ interface ConversationSidebarProps {
   onConnectGitHub?: () => void;
   onDisconnectGitHub?: () => void;
   onSyncRepo?: (repo: string) => void;
+  onInjectFile?: (path: string, content: string) => void;
 }
 
 /** Relative time — minimal, lowercase, no "ago". */
@@ -97,6 +98,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   onConnectGitHub,
   onDisconnectGitHub,
   onSyncRepo,
+  onInjectFile,
 }) => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -235,6 +237,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                   onConnect={onConnectGitHub}
                   onDisconnect={onDisconnectGitHub}
                   onSyncRepo={onSyncRepo}
+                  onInjectFile={onInjectFile}
                 />
               </div>
             ) : (

@@ -630,3 +630,4 @@ export async function closeSportsSpanner() {
     console.log('[Sports-Spanner] Connection closed.');
   }
 }
+export const getBettingTrends = async (team, type) => { return { status: 'STUB', team, type, message: 'Betting trends module coming soon' }; }

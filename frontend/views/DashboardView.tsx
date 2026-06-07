@@ -57,6 +57,10 @@ const DashboardView: React.FC = () => {
           handleSendMessage(`Sync repository context: ${repo}`);
           setIsSidebarOpen(false);
         }}
+        onInjectFile={(path, content) => {
+          handleSendMessage(`Inject context from file: ${path}\n\n\`\`\`\n${content}\n\`\`\``);
+          setIsSidebarOpen(false);
+        }}
       />
     </>
   );

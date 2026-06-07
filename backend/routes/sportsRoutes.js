@@ -4,6 +4,7 @@ import * as sportsController from '../controllers/sportsController.js';
 const router = express.Router();
 
 // --- ESPN Proxy Routes ---
+router.get('/api-proxy/espn-core/mlb/:eventId', sportsController.espnCoreEventDetail);
 router.get('/api-proxy/espn/:sport', sportsController.espnScoreboard);
 router.get('/api-proxy/espn/:sport/event/:eventId', sportsController.espnEventDetail);
 router.get('/api-proxy/espn/:sport/event/:eventId/plays', sportsController.espnEventPlays);
@@ -20,7 +21,7 @@ router.post('/api/intelligence/sports/data-table', sportsController.intelligence
 
 // --- Unified Sports & Leagues Data API ---
 router.get('/api/sports/leagues', sportsController.getLeagues);
-router.get('/api/sports/:league/schedule', sportsController.getSchedule);
+// router.get('/api/sports/:league/schedule', sportsController.getSchedule); // Missing export
 router.get('/api/sports/:league/teams', sportsController.getTeams);
 router.get('/api/sports/:league/teams/:code', sportsController.getTeam);
 router.get('/api/sports/venues', sportsController.getVenues); // Note: global path

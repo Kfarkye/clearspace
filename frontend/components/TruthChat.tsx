@@ -26,6 +26,7 @@ import { useImageUpload } from '../hooks/useImageUpload';
 import ErrorBoundary from './ErrorBoundary';
 import { DiagnosticArtifact } from './DiagnosticArtifact';
 import { ArtifactLedgerCard } from './chat/artifact-ledger-card';
+import { MlbCoreLedgerArtifact } from './MlbCoreLedgerArtifact';
 import { triggerHaptic } from '../lib/haptics';
 
 interface TruthChatProps {
@@ -231,15 +232,17 @@ function renderCodeSegment(
   const isHtmlArtifact = langLower === 'html' && code.trim().startsWith('<');
   let isDiagnostic = langLower.startsWith('diagnostic');
   let isMLBScoreboard = langLower.startsWith('mlbscoreboard');
+  let isMLBCoreLedger = langLower.startsWith('mlbcoreledger');
 
   const noTagMatch =
     !isBettingAngles && !isScoreboard && !isWorkspace && !isTravelHealth && !isSidebar &&
     !isCodeSandbox && !isEmailViewer && !isDataTable && !isLicensing && !isWorldCup &&
-    !isWorldCupGroup && !isYouTube && !isPlayerProps && !isDiagnostic && !isMLBScoreboard;
+    !isWorldCupGroup && !isYouTube && !isPlayerProps && !isDiagnostic && !isMLBScoreboard && !isMLBCoreLedger;
 
   if (noTagMatch && (langLower === 'json' || langLower === 'text')) {
     if (code.includes('"analysis_markdown"') && code.includes('"angles"')) isBettingAngles = true;
     else if (code.includes('"type":"SPORTS_ARTIFACT"')) isMLBScoreboard = true;
+    else if (code.includes('"eventId"') && code.includes('"competitionId"')) isMLBCoreLedger = true;
     else if (code.includes('"games"') && code.includes('"summary_markdown"') && (code.includes('"home_team"') || code.includes('"away_team"'))) isScoreboard = true;
     else if (code.includes('"emails"') && code.includes('"summary_markdown"') && (code.includes('"schedule"') || code.includes('"action_items"'))) isWorkspace = true;
     else if ((code.includes('"bodyText"') || code.includes('"bodyHtml"')) && code.includes('"subject"')) isEmailViewer = true;
@@ -253,6 +256,7 @@ function renderCodeSegment(
     else if (code.includes('"root_cause"') && code.includes('"proposed_fix"')) isDiagnostic = true;
   }
 
+  if (isMLBCoreLedger) return <MlbCoreLedgerArtifact key={key} dataString={code} />;
   if (isMLBScoreboard) return <MLBScoreboard key={key} />;
   if (isScoreboard) return <ScoreboardArtifact key={key} dataString={code} />;
   if (isDiagnostic) return <DiagnosticArtifact key={key} dataString={code} onRecover={() => onSendMessage('Apply the proposed diagnostic patch.')} />;

@@ -450,21 +450,46 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
     if (!league || !ESPN_SPORT_MAP[league.toLowerCase()]) return;
 
     let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let consecutive429s = 0;
+    let isFetching = false;
 
-    const fetchLiveUpdates = async () => {
+    const poll = async () => {
+      if (cancelled || isFetching) return;
+      
+      isFetching = true;
+      let nextTick = 30_000; // Base poll rate of 30s
+
       try {
         const proxyUrl = `/api-proxy/espn/${league.toLowerCase()}`;
         const res = await fetch(proxyUrl, {
-          headers: {
-            'x-app-proxy': import.meta.env.VITE_PROXY_HEADER || ''
-          }
+          headers: { 'x-app-proxy': import.meta.env.VITE_PROXY_HEADER || '' }
         });
-        if (!res.ok || cancelled) return;
+
+        if (res.status === 429) {
+          consecutive429s++;
+          if (consecutive429s > 5) return; // Stop polling after repeated rate limits
+          
+          const retryAfter = res.headers.get('Retry-After');
+          if (retryAfter && !isNaN(parseInt(retryAfter, 10))) {
+            nextTick = parseInt(retryAfter, 10) * 1000;
+          } else {
+            nextTick = Math.min(
+              5 * 60_000, 
+              30_000 * Math.pow(2, consecutive429s - 1)
+            );
+          }
+          return; // Skip JSON parsing
+        }
+
+        if (!res.ok) return;
+
+        consecutive429s = 0; // Reset counter on success
         const json = await res.json();
+        if (cancelled) return;
 
         const updates: Record<string, Partial<Game>> = {};
         for (const ev of json.events || []) {
-          // Parse live situation from ESPN edge data
           let sit: LiveSituation | undefined;
           if (ev.situation) {
             sit = {
@@ -490,25 +515,19 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
           } as Partial<Game>;
         }
 
-        if (!cancelled) {
-          setLiveOverrides(prev => ({ ...prev, ...updates }));
-        }
+        setLiveOverrides(prev => ({ ...prev, ...updates }));
       } catch {
-        console.warn("[Scoreboard] Autonomous telemetry sync failed.");
+        // Silently fail to keep existing data visible without console spam
+      } finally {
+        isFetching = false;
+        if (!cancelled && consecutive429s <= 5) {
+           timeoutId = setTimeout(poll, nextTick);
+        }
       }
     };
 
-    // Recursive setTimeout prevents overlapping fetches if a request is slow
-    const poll = async () => {
-      if (cancelled) return;
-      await fetchLiveUpdates();
-      if (!cancelled) {
-        timeoutId = setTimeout(poll, 10_000); // 10s tick for live play-by-play
-      }
-    };
-
-    let timeoutId: ReturnType<typeof setTimeout>;
     poll();
+
     return () => {
       cancelled = true;
       clearTimeout(timeoutId);

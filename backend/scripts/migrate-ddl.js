@@ -48,6 +48,26 @@ async function main() {
       win_rate           NUMERIC,
       updated_at         TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
     ) PRIMARY KEY(league_id, team_code, period),
+      INTERLEAVE IN PARENT teams ON DELETE CASCADE`,
+
+    `CREATE TABLE mlb_team_snapshots (
+      league_id           STRING(32) NOT NULL,
+      team_code           STRING(10) NOT NULL,
+      period              STRING(32) NOT NULL,
+      record              STRING(10),
+      moneyline_win_pct   NUMERIC,
+      run_line_cover_pct  NUMERIC,
+      over_pct            NUMERIC,
+      avg_runs_for        NUMERIC,
+      avg_runs_against    NUMERIC,
+      run_differential    NUMERIC,
+      home_away_split     STRING(32),
+      last_5_record       STRING(10),
+      last_10_record      STRING(10),
+      starter_era         NUMERIC,
+      bullpen_era         NUMERIC,
+      updated_at          TIMESTAMP NOT NULL OPTIONS (allow_commit_timestamp = true),
+    ) PRIMARY KEY(league_id, team_code, period),
       INTERLEAVE IN PARENT teams ON DELETE CASCADE`
   ];
 

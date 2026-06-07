@@ -101,37 +101,59 @@ function computeSnapshot(teamCode: string, matches: any[], period: string) {
 
   const count = subset.length;
   let wins = 0;
-  let totalGoalsFor = 0;
-  let totalGoalsAgainst = 0;
-  let cleanSheets = 0; // shutouts
-  let over85Count = 0; // over total rate (> 8.5 runs)
-  let btts = 0; // both teams score >= 1 run
+  let losses = 0;
+  let totalRunsFor = 0;
+  let totalRunsAgainst = 0;
+  let over85Count = 0;
+  let rlCovers = 0; // Won by >= 2 or lost by 1 (naive run line logic)
 
-  // Form strings: oldest first (left) to newest last (right)
-  const form5Str = subset.slice(-5).map(m => m.result).join('');
-  const form10Str = subset.slice(-10).map(m => m.result).join('');
+  let homeWins = 0, homeLosses = 0;
+  let awayWins = 0, awayLosses = 0;
 
   subset.forEach(m => {
-    if (m.result === 'W') wins++;
-    totalGoalsFor += m.goals_for;
-    totalGoalsAgainst += m.goals_against;
-    if (m.goals_against === 0) cleanSheets++;
+    if (m.result === 'W') {
+      wins++;
+      if (m.venue_type === 'home') homeWins++;
+      else awayWins++;
+      if ((m.goals_for - m.goals_against) >= 2) rlCovers++;
+    } else {
+      losses++;
+      if (m.venue_type === 'home') homeLosses++;
+      else awayLosses++;
+      if ((m.goals_against - m.goals_for) === 1) rlCovers++;
+    }
+    
+    totalRunsFor += m.goals_for;
+    totalRunsAgainst += m.goals_against;
     if ((m.goals_for + m.goals_against) > 8.5) over85Count++;
-    if (m.goals_for > 0 && m.goals_against > 0) btts++;
   });
+
+  const last5 = matches.slice(-5);
+  let l5w = 0, l5l = 0;
+  last5.forEach(m => m.result === 'W' ? l5w++ : l5l++);
+
+  const last10 = matches.slice(-10);
+  let l10w = 0, l10l = 0;
+  last10.forEach(m => m.result === 'W' ? l10w++ : l10l++);
+
+  const runDifferential = totalRunsFor - totalRunsAgainst;
 
   return {
     league_id: 'MLB',
     team_code: teamCode,
     period,
-    form_5: form5Str,
-    form_10: form10Str,
-    goals_for_avg: Spanner.numeric((totalGoalsFor / count).toFixed(2)),
-    goals_against_avg: Spanner.numeric((totalGoalsAgainst / count).toFixed(2)),
-    clean_sheet_rate: Spanner.numeric((cleanSheets / count).toFixed(4)),
-    over_2_5_rate: Spanner.numeric((over85Count / count).toFixed(4)), // maps to over total rate
-    btts_rate: Spanner.numeric((btts / count).toFixed(4)),
-    win_rate: Spanner.numeric((wins / count).toFixed(4)),
+    record: `${wins}-${losses}`,
+    moneyline_win_pct: Spanner.numeric((wins / count).toFixed(4)),
+    run_line_cover_pct: Spanner.numeric((rlCovers / count).toFixed(4)),
+    over_pct: Spanner.numeric((over85Count / count).toFixed(4)),
+    avg_runs_for: Spanner.numeric((totalRunsFor / count).toFixed(2)),
+    avg_runs_against: Spanner.numeric((totalRunsAgainst / count).toFixed(2)),
+    run_differential: Spanner.numeric(runDifferential.toFixed(1)),
+    home_away_split: `Home: ${homeWins}-${homeLosses} | Away: ${awayWins}-${awayLosses}`,
+    last_5_record: `${l5w}-${l5l}`,
+    last_10_record: `${l10w}-${l10l}`,
+    starter_era: null, // Placeholder for future pitching ingestion
+    bullpen_era: null, // Placeholder for future pitching ingestion
     updated_at: Spanner.COMMIT_TIMESTAMP,
   };
 }
@@ -248,7 +270,7 @@ async function run() {
 
     if (snapshots.length > 0) {
       try {
-        await db.table('team_historical_snapshots').upsert(snapshots);
+        await db.table('mlb_team_snapshots').upsert(snapshots);
         console.log(`   ✓ Snapshots updated.`);
       } catch (err: any) {
         console.error(`❌ Failed to upsert snapshots for ${code}: ${err.message}`);

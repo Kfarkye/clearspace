@@ -305,6 +305,157 @@ export const espnEventDetail = async (req, res) => {
   }
 };
 
+export const espnCoreEventDetail = async (req, res) => {
+  const { eventId } = req.params;
+  const coreEventUrl = `https://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/${eventId}?lang=en&region=us`;
+  console.log(`[ESPN Core MLB] Fetching event detail: ${coreEventUrl}`);
+
+  try {
+    const eventData = await resolveRef(coreEventUrl, 5000);
+    if (!eventData || !eventData.competitions || eventData.competitions.length === 0) {
+      return res.status(404).json({ error: 'Event or competition not found' });
+    }
+
+    const compObj = eventData.competitions[0];
+    const compData = compObj.$ref ? await resolveRef(compObj.$ref, 5000) : compObj;
+    
+    let oddsData = null;
+    let lineMovement = null;
+    
+    if (compData.odds && compData.odds.$ref) {
+      const oddsList = await resolveRef(compData.odds.$ref, 5000);
+      if (oddsList && oddsList.items && oddsList.items.length > 0) {
+        const item = oddsList.items[0];
+        const oddsItemData = item.$ref ? await resolveRef(item.$ref, 5000) : item;
+        
+        const formatOdds = (stage) => {
+          const homeML = oddsItemData.homeTeamOdds?.[stage]?.moneyLine?.american || null;
+          const awayML = oddsItemData.awayTeamOdds?.[stage]?.moneyLine?.american || null;
+          const homeSpread = oddsItemData.homeTeamOdds?.[stage]?.pointSpread?.american || null;
+          const total = oddsItemData[stage]?.total?.american || null;
+          return {
+            moneyLine: homeML && awayML ? `${homeML} / ${awayML}` : null,
+            spread: homeSpread ? `${homeSpread}` : null,
+            total
+          };
+        };
+        
+        oddsData = {
+          provider: oddsItemData.provider?.name || 'Unknown',
+          currentMoneyLine: formatOdds('current').moneyLine,
+          currentSpread: formatOdds('current').spread,
+          currentOverUnder: oddsItemData.current?.total?.american || oddsItemData.current?.total?.value || null,
+        };
+        
+        lineMovement = {
+          open: formatOdds('open'),
+          current: formatOdds('current'),
+          close: formatOdds('close')
+        };
+      }
+    }
+    
+    const teams = [];
+    const probablePitchers = [];
+    const records = {};
+    
+    if (compData.competitors) {
+      for (const compItem of compData.competitors) {
+        const c = compItem.$ref ? await resolveRef(compItem.$ref, 5000) : compItem;
+        
+        const teamObj = c.team?.$ref ? await resolveRef(c.team.$ref, 5000) : c.team;
+        const teamName = teamObj?.displayName || teamObj?.name || 'Unknown';
+        
+        teams.push({
+          id: c.id,
+          name: teamName,
+          homeAway: c.homeAway,
+        });
+        
+        if (c.record && c.record.items && c.record.items.length > 0) {
+          records[teamName] = c.record.items[0].summary || c.record.items[0].displayValue;
+        }
+        
+        if (c.probables) {
+          for (const prob of c.probables) {
+            let athleteName = 'Unknown Pitcher';
+            if (prob.athlete && prob.athlete.$ref) {
+               const athlete = await resolveRef(prob.athlete.$ref, 5000);
+               if (athlete) athleteName = athlete.displayName || athlete.fullName || athleteName;
+            }
+            probablePitchers.push({
+              team: teamName,
+              name: athleteName,
+              shortName: prob.shortDisplayName || prob.name
+            });
+          }
+        }
+      }
+    }
+
+    let situationData = null;
+    let recentPlays = [];
+    
+    // Fetch summary if the game is live or we want plays
+    const siteSummaryUrl = `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${eventId}`;
+    try {
+      const summaryData = await fetch(siteSummaryUrl).then(res => res.ok ? res.json() : null);
+      if (summaryData) {
+        if (summaryData.plays && summaryData.plays.length > 0) {
+          recentPlays = summaryData.plays.slice(-5).map(p => ({
+            id: p.id,
+            text: p.text || `${p.type?.text}`,
+            period: p.period?.displayValue || p.period?.number,
+            wallclock: p.wallclock,
+            awayScore: p.awayScore,
+            homeScore: p.homeScore
+          }));
+        }
+        
+        if (summaryData.situation) {
+          situationData = {
+            balls: summaryData.situation.balls,
+            strikes: summaryData.situation.strikes,
+            outs: summaryData.situation.outs,
+            runnersOnBase: [],
+            pitcher: summaryData.situation.pitcher?.playerId || null,
+            batter: summaryData.situation.batter?.playerId || null,
+            lastPlay: summaryData.situation.lastPlay?.id || null
+          };
+          if (summaryData.situation.onFirst) situationData.runnersOnBase.push('1st');
+          if (summaryData.situation.onSecond) situationData.runnersOnBase.push('2nd');
+          if (summaryData.situation.onThird) situationData.runnersOnBase.push('3rd');
+        }
+      }
+    } catch (err) {
+      console.warn('[ESPN Core MLB] Failed to fetch summary/PBP:', err);
+    }
+
+    res.json({
+      eventId: eventData.id,
+      competitionId: compData.id,
+      teams,
+      status: compData.status?.type?.description || eventData.status?.type?.description || 'Unknown',
+      venue: compData.venue?.fullName || 'Unknown',
+      probablePitchers,
+      odds: oddsData,
+      lineMovement,
+      records,
+      situation: situationData,
+      recentPlays,
+      sourcePaths: [
+        coreEventUrl,
+        compData.$ref || 'embedded',
+        siteSummaryUrl
+      ],
+      fetchedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('[ESPN Core MLB] Error:', err);
+    res.status(500).json({ error: 'Failed to fetch core event detail' });
+  }
+};
+
 export const espnEventPlays = async (req, res) => {
   const { sport, eventId } = req.params;
   const mapping = ESPN_SPORT_MAP[sport.toLowerCase()];

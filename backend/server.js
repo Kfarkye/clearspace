@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { mountChatRoute } from './lib/chat-handler.js';
 import { mountGitHubRoutes } from './lib/github-routes.js';
 import { fetchDataTable } from './lib/data-table-agent.js';
+import { mountMultiToolRoute } from './lib/multitool-handler.js';
 
 /**
  * @license
@@ -30,6 +31,7 @@ const app = express();
 import { setupSecurity } from './middleware/security.js';
 import { setupAuth, sessionManager, PROXY_HEADER } from './middleware/auth.js';
 import { errorHandler } from './middleware/error.js';
+import { requestTimeoutMiddleware } from './middleware/timeout.js';
 
 const PORT = process?.env?.PORT || process?.env?.API_BACKEND_PORT || 5000;
 const API_BACKEND_HOST = process?.env?.PORT ? "0.0.0.0" : (process?.env?.API_BACKEND_HOST || "127.0.0.1");
@@ -42,6 +44,11 @@ if (!GOOGLE_CLOUD_PROJECT || !GOOGLE_CLOUD_LOCATION) {
 }
 
 setupSecurity(app);
+
+// --- Request Timeout Guard ---
+// Fires before Cloud Run's reverse proxy timeout (300s default).
+// Returns a structured 504 instead of a raw connection drop.
+app.use(requestTimeoutMiddleware(25000));
 
 // --- Standard API Body Parsers ---
 // Mounted specifically to /api to prevent consuming raw request streams for /api-proxy
@@ -78,6 +85,9 @@ app.use(proxyRoutes);
 
 // --- Gemini Chat Endpoint (direct API key, gemini-3.5-flash) ---
 mountChatRoute(app);
+
+// --- Gemini Multi-Tool Endpoint ---
+mountMultiToolRoute(app);
 
 // --- Data Table Agent Endpoint (grounded search + structured extraction) ---
 app.get('/api/data-table', async (req, res) => {

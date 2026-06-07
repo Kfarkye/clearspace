@@ -44,11 +44,20 @@ export function createSessionMiddleware(sessionManager, options = {}) {
       return next();
     }
 
-    // Priority 3: Dev proxy header fallback
-    if (process.env.NODE_ENV !== 'production' && options.devProxyHeader && options.devProxyValue) {
+    // Priority 3: App proxy header for safe public data routes
+    if (options.devProxyHeader && options.devProxyValue) {
       if (req.headers[options.devProxyHeader] === options.devProxyValue) {
-        req.userEmail = 'dev@localhost';
-        return next();
+        // Enforce strict route boundaries in production
+        const isSafeProxyRoute = req.method === 'GET' && (
+          req.originalUrl.startsWith('/api-proxy/espn') || 
+          req.originalUrl.startsWith('/api-proxy/odds') ||
+          req.originalUrl.startsWith('/api-proxy/youtube')
+        );
+
+        if (process.env.NODE_ENV !== 'production' || isSafeProxyRoute) {
+          req.userEmail = 'proxy@truth.local';
+          return next();
+        }
       }
     }
 

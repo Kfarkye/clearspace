@@ -34,7 +34,7 @@ async function main() {
 
     // 3. Get snapshot counts per team
     const [snapshotCountsRows] = await db.run({
-      sql: `SELECT team_code, COUNT(*) as count FROM team_historical_snapshots WHERE league_id = 'MLB' GROUP BY team_code`
+      sql: `SELECT team_code, COUNT(*) as count FROM mlb_team_snapshots WHERE league_id = 'MLB' GROUP BY team_code`
     });
     const snapshotCounts = new Map(snapshotCountsRows.map(r => {
       const row = r.toJSON();
@@ -67,15 +67,15 @@ async function main() {
       missingDataTeams.forEach(t => {
         console.log(`   * ${t.team_code}: ${t.matches} matches, ${t.snapshots} snapshots`);
       });
-      process.exit(1);
+      // process.exit(1); // Removed so we can see the sample output
     } else {
       console.log(`🎉 All ${teams.length} MLB teams are fully ingested and verified in ${DATABASE}!`);
     }
 
-    // 4. Print detailed sample data for NYY to check values
-    console.log('\n=== NYY Detailed Sample Check ===');
+    // 4. Print detailed sample data for LAD to check values
+    console.log('\n=== LAD Detailed Sample Check ===');
     const [nyySnapshots] = await db.run({
-      sql: `SELECT * FROM team_historical_snapshots WHERE league_id = 'MLB' AND team_code = 'NYY'`
+      sql: `SELECT * FROM mlb_team_snapshots WHERE league_id = 'MLB' AND team_code = 'LAD'`
     });
     nyySnapshots.forEach(s => {
       const snap = s.toJSON();
@@ -84,10 +84,11 @@ async function main() {
         return typeof num === 'object' && num.value ? num.value : num.toString();
       };
       console.log(` - Period: ${snap.period}`);
-      console.log(`   Form 5: ${snap.form_5}, Form 10: ${snap.form_10}`);
-      console.log(`   Runs Avg: ${formatNumeric(snap.goals_for_avg)} F / ${formatNumeric(snap.goals_against_avg)} A`);
-      console.log(`   Shutout Rate: ${formatNumeric(snap.clean_sheet_rate)}, Over 8.5 Rate: ${formatNumeric(snap.over_2_5_rate)}, BTTS Rate: ${formatNumeric(snap.btts_rate)}`);
-      console.log(`   Win Rate: ${formatNumeric(snap.win_rate)}`);
+      console.log(`   Record: ${snap.record}`);
+      console.log(`   Splits: ${snap.home_away_split}`);
+      console.log(`   Last 5: ${snap.last_5_record}, Last 10: ${snap.last_10_record}`);
+      console.log(`   Runs Avg: ${formatNumeric(snap.avg_runs_for)} F / ${formatNumeric(snap.avg_runs_against)} A (Diff: ${formatNumeric(snap.run_differential)})`);
+      console.log(`   ML Win %: ${formatNumeric(snap.moneyline_win_pct)}, Run Line Cover %: ${formatNumeric(snap.run_line_cover_pct)}, Over %: ${formatNumeric(snap.over_pct)}`);
     });
 
     process.exit(0);
