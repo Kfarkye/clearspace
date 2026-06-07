@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Plus, RefreshCw, Cloud, Clock, Settings } from 'lucide-react';
+import { Plus, RefreshCw, Cloud, Clock, Settings, PanelLeft } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 const Layout: React.FC = () => {
@@ -18,6 +18,8 @@ const Layout: React.FC = () => {
     error,
     isWorkspaceConnected,
     handleConnectWorkspace,
+    setIsSidebarOpen,
+    isSidebarOpen,
   } = useAppContext();
 
   const location = useLocation();
@@ -33,6 +35,16 @@ const Layout: React.FC = () => {
         <header className="absolute top-0 left-0 right-0 h-14 px-4 sm:px-6 flex items-center justify-between bg-alabaster/50 backdrop-blur-2xl z-50 border-b border-white/40 shadow-[0_4px_24px_rgba(140,122,107,0.03)]">
           {/* Left: Status + Brand */}
           <div className="flex items-center gap-3 w-1/3">
+            {isChat && (
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/40 backdrop-blur-xl border border-white/50 shadow-btn hover:shadow-btn-hover hover:bg-white/60 active:scale-90 transition-all duration-300 text-taupe hover:text-charcoal group"
+                title="Toggle Sidebar"
+              >
+                <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
+                <PanelLeft size={12} strokeWidth={2} className="transition-transform duration-300" />
+              </button>
+            )}
             <NavLink to="/" className="flex items-center gap-3 group">
               <div className="relative flex items-center justify-center w-2 h-2">
                 <span className="absolute w-full h-full rounded-full opacity-40 animate-ping bg-bronze" />
