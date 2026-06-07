@@ -33,6 +33,7 @@ interface AppContextType {
   workspaceToken: string | null;
   isWorkspaceConnected: boolean;
   handleConnectWorkspace: () => void;
+  disconnectWorkspace: () => void;
 
   // GitHub Auth
   isGitHubConnected: boolean;
@@ -52,7 +53,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   // --- Google Workspace ---
   const [workspaceToken, setWorkspaceToken] = useState<string | null>(null);
+  const [tokenExpiresAt, setTokenExpiresAt] = useState<number | null>(null);
   const [isWorkspaceConnected, setIsWorkspaceConnected] = useState(false);
+
+  const disconnectWorkspace = useCallback(() => {
+    setWorkspaceToken(null);
+    setTokenExpiresAt(null);
+    setIsWorkspaceConnected(false);
+  }, []);
 
   // --- GitHub ---
   const [isGitHubConnected, setIsGitHubConnected] = useState(false);
@@ -121,6 +129,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     onSuccess: async (tokenResponse) => {
       if (tokenResponse.access_token) {
         setWorkspaceToken(tokenResponse.access_token);
+        
+        const expiresInMs = (tokenResponse.expires_in || 3600) * 1000;
+        setTokenExpiresAt(Date.now() + expiresInMs);
+        setIsWorkspaceConnected(true);
+
         try {
           await fetch(API_ENDPOINTS.AUTH_SESSION, {
             method: 'POST',
@@ -131,10 +144,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } catch (err) {
           console.error('[Auth] Failed to establish session:', err);
         }
-        setIsWorkspaceConnected(true);
       }
     },
-    onError: (err) => console.error('OAuth error:', err),
+    onError: (err) => {
+      console.error('OAuth error:', err);
+      disconnectWorkspace();
+    },
     scope: [
       'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/gmail.send',
@@ -148,6 +163,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'https://www.googleapis.com/auth/presentations.readonly',
     ].join(' '),
   });
+
+  useEffect(() => {
+    if (!workspaceToken || !tokenExpiresAt) return;
+
+    // Proactively disconnect 60 seconds before actual expiration to prevent 401s
+    const timeUntilExpiration = tokenExpiresAt - Date.now() - 60000;
+
+    if (timeUntilExpiration <= 0) {
+      console.warn('[Auth] Token expired. Gracefully disconnecting workspace.');
+      disconnectWorkspace();
+      return;
+    }
+
+    const expirationTimer = setTimeout(() => {
+      console.warn('[Auth] Token reached TTL. Gracefully disconnecting workspace.');
+      disconnectWorkspace();
+    }, timeUntilExpiration);
+
+    return () => clearTimeout(expirationTimer);
+  }, [workspaceToken, tokenExpiresAt, disconnectWorkspace]);
 
   // --- Keyboard Shortcuts ---
   useEffect(() => {
@@ -166,6 +201,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     workspaceToken,
     isWorkspaceConnected,
     handleConnectWorkspace,
+    disconnectWorkspace,
     isGitHubConnected,
     githubUser,
     handleConnectGitHub,

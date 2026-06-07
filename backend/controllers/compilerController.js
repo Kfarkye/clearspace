@@ -9,9 +9,6 @@ import { z } from 'zod';
  * @property {string} [title] - Optional override title.
  */
 
-// Define a strict schema matching the frontend tool declaration.
-// .strict() ensures any unexpected keys are rejected, preventing template injection.
-// .max() limits prevent DoS via massive payload strings.
 const licensingGuideSchema = z.object({
   title: z.string().max(200),
   state: z.string().max(100),
@@ -57,7 +54,6 @@ export const compileLicensingGuide = async (req, res, next) => {
   try {
     const rawPayload = req.body;
 
-    // 1. Validate payload structure to prevent downstream crashes and corrupted DB entries
     if (!rawPayload || typeof rawPayload !== 'object' || Array.isArray(rawPayload)) {
       const error = new Error('Invalid payload: Expected a JSON object.');
       error.status = 400;
@@ -70,10 +66,8 @@ export const compileLicensingGuide = async (req, res, next) => {
       throw error;
     }
 
-    // Sanitize with Zod
     const payload = licensingGuideSchema.parse(rawPayload);
 
-    // 2. Forward the payload to the internal Python Compiler service with a 15s timeout
     const compilerResponse = await fetch('http://127.0.0.1:5002/compile/licensing_guide', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -84,22 +78,19 @@ export const compileLicensingGuide = async (req, res, next) => {
     if (!compilerResponse.ok) {
       const errorText = await compilerResponse.text().catch(() => 'Unable to read error text');
       const error = new Error(`Python Compiler failed (${compilerResponse.status}): ${errorText}`);
-      error.status = compilerResponse.status === 400 ? 400 : 502; // Map Bad Gateway for internal failure
+      error.status = compilerResponse.status === 400 ? 400 : 502; 
       throw error;
     }
 
-    // 3. Receive the raw compiled HTML string
     const html = await compilerResponse.text();
 
     if (!html.trim()) {
       throw new Error('Python Compiler returned empty HTML content.');
     }
 
-    // 4. Deploy to Cloud Storage
     const title = payload.title || `${payload.state} ${payload.profession} Guide`;
     const { url } = await deployHtml(html, title);
 
-    // 5. Save the artifact record in the database if user is authenticated
     if (req.userId) {
       await spannerDAL.saveArtifact(req.userId, {
         title: title,
@@ -112,17 +103,27 @@ export const compileLicensingGuide = async (req, res, next) => {
       });
     }
 
-    // 6. Return the URL to the frontend
-    res.json({ url });
-  } catch (err) {
-    console.error('[Compiler Controller] Failed:', err.message);
-    
-    // Catch fetch timeout explicitly to provide a clean 504 Gateway Timeout error
-    if (err.name === 'TimeoutError') {
-      err.status = 504;
-      err.message = 'Internal compiler service timed out.';
-    }
+    return res.status(200).json({
+      success: true,
+      url: url,
+      message: 'Licensing guide compiled and deployed successfully.'
+    });
 
-    next(err);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payload validation failed.',
+        errors: error.errors
+      });
+    }
+    
+    const status = error.status || 500;
+    const message = error.message || 'Internal Server Error';
+    
+    return res.status(status).json({
+      success: false,
+      message: message
+    });
   }
 };

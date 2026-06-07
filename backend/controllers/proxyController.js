@@ -2,6 +2,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { classify, getDispatch, MODES } from '../lib/router.js';
 import { sessionManager, PROXY_HEADER } from '../middleware/auth.js';
 import { deployHtml as deployHtmlService } from '../services/cloudStorageService.js';
+import { streamingResilientFetch } from '../lib/resilient-fetch.js';
 
 const GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION;
 const GOOGLE_CLOUD_PROJECT = process?.env?.GOOGLE_CLOUD_PROJECT;
@@ -345,7 +346,7 @@ export const vertexProxy = async (req, res) => {
       body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
     };
 
-    const apiResponse = await fetch(apiUrl, apiFetchOptions);
+    const apiResponse = await streamingResilientFetch(apiUrl, apiFetchOptions);
 
     if (apiClient.isStreaming) {
       console.log(`[Node Proxy] Sending STREAMING response for ${apiClient.name}`);

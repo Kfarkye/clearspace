@@ -46,9 +46,8 @@ if (!GOOGLE_CLOUD_PROJECT || !GOOGLE_CLOUD_LOCATION) {
 setupSecurity(app);
 
 // --- Request Timeout Guard ---
-// Fires before Cloud Run's reverse proxy timeout (300s default).
-// Returns a structured 504 instead of a raw connection drop.
-app.use(requestTimeoutMiddleware(25000));
+// Fires before Cloud Run's default timeout (300s).
+app.use(requestTimeoutMiddleware(280000));
 
 // --- Standard API Body Parsers ---
 // Mounted specifically to /api to prevent consuming raw request streams for /api-proxy
@@ -66,11 +65,13 @@ import dataRoutes from './routes/dataRoutes.js';
 import sportsRoutes from './routes/sportsRoutes.js';
 import compilerRoutes from './routes/compilerRoutes.js';
 import assetsRoutes from './routes/assets.js';
+import artifactRoutes from './routes/artifactRoutes.js';
 import { getAccessToken } from './controllers/proxyController.js';
 // --- 3. STANDARD API ROUTES ---
 app.use('/api/data', dataRoutes);
 app.use('/api/compiler', compilerRoutes);
 app.use('/api/assets', assetsRoutes);
+app.use('/artifact', artifactRoutes);
 app.use('/', sportsRoutes);
 
 // Retrofit layer for frontend World Cup widgets pointing directly to /api/world-cup

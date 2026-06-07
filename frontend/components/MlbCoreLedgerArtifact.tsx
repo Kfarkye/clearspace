@@ -19,7 +19,7 @@ export const MlbCoreLedgerArtifact: React.FC<CoreLedgerProps> = ({ dataString })
       const parsed = JSON.parse(parsedStr || '{}');
       
       if (!parsed.eventId) {
-        setError("Missing eventId in payload.");
+        setError("Missing event ID.");
         setLoading(false);
         return;
       }
@@ -37,7 +37,7 @@ export const MlbCoreLedgerArtifact: React.FC<CoreLedgerProps> = ({ dataString })
         });
     } catch (e) {
       console.error(e);
-      setError("Failed to parse ledger payload.");
+      setError("Failed to load ledger data.");
       setLoading(false);
     }
   }, [dataString]);

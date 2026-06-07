@@ -47,7 +47,7 @@ export const SidebarArtifact: React.FC<SidebarArtifactProps> = ({ dataString, on
           System Error
         </span>
         <p className="text-xs text-taupe leading-relaxed">
-          Failed to render navigation artifact. The payload structure is invalid.
+          Failed to load sidebar. The data is invalid.
         </p>
       </div>
     );

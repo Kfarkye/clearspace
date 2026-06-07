@@ -324,21 +324,11 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       [msg.content, isUser]
     );
 
-    // Detect leaked raw-API error strings. Kept as a safety net; the real fix is upstream.
-    const isFatalError =
-      !isUser &&
-      typeof msg.content === 'string' &&
-      (msg.content.includes('INVALID_ARGUMENT') ||
-        msg.content.startsWith('Error: Error:') ||
-        msg.content.includes('400 Bad Request'));
-
-    if (isFatalError) {
-      throw new Error("Couldn't load that");
-    }
+    const isFatalError = false; // Intentionally disabled to allow graceful diagnostic rendering
 
     const renderContent = () => {
       if (isUser) {
-        return <p className="whitespace-pre-wrap text-[15px] leading-[1.6] text-ink">{msg.content}</p>;
+        return <p className="whitespace-pre-wrap text-[15px] leading-[1.6] text-sand">{msg.content}</p>;
       }
       if (!msg.content) {
         return <ThinkingIndicator executionPhase={executionPhase} />;
@@ -371,7 +361,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         className={`group relative flex flex-col w-full py-6 ${isUser ? 'items-end' : 'items-start'}`}
       >
         <span className="font-mono text-[10px] text-taupe uppercase tracking-widest mb-2">
-          {isUser ? 'You' : 'Drip'}
+          {isUser ? 'You' : 'Truth'}
         </span>
 
         {msg.image && (
@@ -380,17 +370,21 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
           </div>
         )}
 
-        <div className={`max-w-[85%] sm:max-w-[90%] w-full ${isUser ? 'bg-sand px-5 py-4 border-r-2 border-charcoal rounded-l-xl' : 'pr-8'}`}>
+        <div className={`max-w-[85%] sm:max-w-[90%] w-full ${isUser ? 'bg-charcoal px-6 py-5 border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] rounded-2xl rounded-tr-sm' : 'pr-8'}`}>
           {renderContent()}
 
-          {!isUser && msg.content && (
-            <div className="flex items-center gap-3 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {msg.content && (
+            <div className={`flex items-center gap-3 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isUser ? 'justify-end' : ''}`}>
               <button
                 onClick={handleCopyMessage}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono text-taupe hover:text-charcoal hover:bg-clay/20 transition-all duration-200 active:scale-95"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono transition-all duration-200 active:scale-95 ${
+                  isUser 
+                    ? 'text-sand/50 hover:text-sand hover:bg-white/10' 
+                    : 'text-taupe hover:text-charcoal hover:bg-clay/20'
+                }`}
                 aria-label={msgCopied ? 'Copied' : 'Copy message'}
               >
-                {msgCopied ? <Check size={12} className="text-bronze" /> : <Copy size={12} />}
+                {msgCopied ? <Check size={12} className={isUser ? "text-emerald" : "text-bronze"} /> : <Copy size={12} />}
                 <span>{msgCopied ? 'Copied' : 'Copy'}</span>
               </button>
             </div>

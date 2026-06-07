@@ -11,6 +11,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import * as dataService from '../services/dataService';
 import type { ConversationSummary } from '../types/persistence';
 import { GitHubPanel } from './GitHubPanel';
+import { WorkspacePanel } from './WorkspacePanel';
 
 interface ConversationSidebarProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ function groupConversations(conversations: ConversationSummary[]): { label: stri
   }
 
   const result: { label: string; items: ConversationSummary[] }[] = [];
-  if (pinned.length > 0) result.push({ label: '__pinned__', items: pinned });
+  if (pinned.length > 0) result.push({ label: 'pinned', items: pinned });
 
   for (const [label, items] of Object.entries(groups)) {
     if (items.length > 0) result.push({ label, items });
@@ -101,137 +102,178 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   onInjectFile,
 }) => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'history' | 'github'>('history');
 
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-
-    async function load() {
+  const fetchConversations = useCallback(async () => {
+    try {
       setIsLoading(true);
-      try {
-        const list = await dataService.listConversations(50);
-        if (!cancelled) setConversations(list);
-      } catch (e: any) {
-        if (e.message !== 'AUTH_REQUIRED') {
-          console.warn('[Sidebar] Failed to load conversations:', e);
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+      const data = await dataService.listConversations(50);
+      setConversations(data || []);
+    } catch (error) {
+      console.error('Failed to load conversations', error);
+    } finally {
+      setIsLoading(false);
     }
-    load();
-    return () => { cancelled = true; };
-  }, [isOpen]);
+  }, []);
 
   useEffect(() => {
-    if (!isOpen) {
-      setConfirmDeleteId(null);
-      setCopiedId(null);
+    if (isOpen) {
+      fetchConversations();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchConversations]);
 
-  const handleDelete = useCallback(async (conversationId: string) => {
+  const handleTogglePin = async (e: React.MouseEvent, conv: ConversationSummary) => {
+    e.stopPropagation();
+    const updated = { ...conv, isPinned: !conv.isPinned };
+    
+    // Optimistic UI update
+    setConversations(prev => prev.map(c => c.conversationId === conv.conversationId ? updated : c));
+    
     try {
-      await dataService.deleteConversation(conversationId);
-      setConversations(prev => prev.filter(c => c.conversationId !== conversationId));
-      setConfirmDeleteId(null);
-    } catch (err) {
-      console.error('[Sidebar] Delete failed:', err);
+      await dataService.pinConversation(conv.conversationId, updated.isPinned);
+    } catch (error) {
+      // Revert on failure
+      setConversations(prev => prev.map(c => c.conversationId === conv.conversationId ? conv : c));
     }
-  }, []);
+  };
 
-  const handlePin = useCallback(async (conversationId: string, currentlyPinned: boolean) => {
-    const newPinned = !currentlyPinned;
-    // Optimistic update
-    setConversations(prev =>
-      prev.map(c => c.conversationId === conversationId ? { ...c, isPinned: newPinned } : c)
-    );
-    try {
-      await dataService.pinConversation(conversationId, newPinned);
-    } catch (err) {
-      // Rollback
-      setConversations(prev =>
-        prev.map(c => c.conversationId === conversationId ? { ...c, isPinned: currentlyPinned } : c)
-      );
-    }
-  }, []);
-
-  const handleCopy = useCallback(async (conv: ConversationSummary) => {
+  const handleExport = async (e: React.MouseEvent, conv: ConversationSummary) => {
+    e.stopPropagation();
     try {
       const detail = await dataService.getConversation(conv.conversationId);
       if (!detail) return;
-
       const md = formatConversationMarkdown(conv, detail.messages);
       await navigator.clipboard.writeText(md);
       
       setCopiedId(conv.conversationId);
-      setTimeout(() => {
-        setCopiedId(prev => prev === conv.conversationId ? null : prev);
-      }, 1500);
-    } catch (err) {
-      console.error('[Sidebar] Copy failed:', err);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (error) {
+      console.error('Export failed', error);
     }
-  }, []);
+  };
 
-  const grouped = useMemo(() => groupConversations(conversations), [conversations]);
+  const groupedConversations = useMemo(() => groupConversations(conversations), [conversations]);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Scrim */}
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-40"
             onClick={onClose}
-            className="fixed inset-0 bg-charcoal/8 z-40"
           />
 
-          {/* Panel */}
+          {/* Sidebar */}
           <motion.aside
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 40, stiffness: 400, mass: 0.8 }}
-            className="fixed top-0 left-0 h-full w-[296px] bg-[#F9F8F6] border-r border-[#DDD8D2] z-50 flex flex-col select-none"
+            transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
+            className="fixed inset-y-0 left-0 w-[380px] bg-charcoal border-r border-white/5 shadow-glass z-50 flex flex-col font-sans overflow-hidden"
           >
-            {/* Header with Tab Switcher */}
-            <div className="px-5 pt-6 pb-3">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setActiveTab('history')}
-                  className={`text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-200 ${
-                    activeTab === 'history' ? 'text-[#8C7A6B]/80' : 'text-[#8C7A6B]/25 hover:text-[#8C7A6B]/50'
-                  }`}
-                >
-                  History
-                </button>
-                <button
-                  onClick={() => setActiveTab('github')}
-                  className={`text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-200 flex items-center gap-1.5 ${
-                    activeTab === 'github' ? 'text-[#8C7A6B]/80' : 'text-[#8C7A6B]/25 hover:text-[#8C7A6B]/50'
-                  }`}
-                >
-                  GitHub
-                  {isGitHubConnected && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400/80" />
-                  )}
-                </button>
-              </div>
+            {/* Header */}
+            <header className="flex items-center justify-between px-6 py-5 border-b border-white/5 shrink-0">
+              <span className="text-sand font-medium tracking-tight">History</span>
+              <button 
+                onClick={onClose}
+                className="text-taupe hover:text-sand text-xs font-mono uppercase tracking-widest transition-colors duration-200 focus:outline-none"
+              >
+                Close
+              </button>
+            </header>
+
+            {/* Scrollable List */}
+            <div className="flex-1 overflow-y-auto overscroll-contain no-scrollbar py-4">
+              {isLoading ? (
+                <div className="px-6 flex flex-col gap-6 mt-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex flex-col gap-2">
+                      <div className="w-16 h-3 bg-white/5 rounded animate-pulse" />
+                      <div className="w-full h-4 bg-white/5 rounded animate-pulse" />
+                      <div className="w-3/4 h-4 bg-white/5 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="px-6 py-8 text-taupe text-[12px] font-mono">
+                  No conversations yet.
+                </div>
+              ) : (
+                <LayoutGroup>
+                  {groupedConversations.map((group) => (
+                    <motion.div layout key={group.label} className="mb-8 last:mb-0">
+                      <motion.h3 
+                        layout="position"
+                        className="px-6 mb-3 text-taupe font-mono text-[10px] uppercase tracking-widest"
+                      >
+                        {group.label}
+                      </motion.h3>
+                      <div className="flex flex-col">
+                        {group.items.map((conv) => {
+                          const isActive = conv.conversationId === activeConversationId;
+                          return (
+                            <motion.div
+                              layout
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              key={conv.conversationId}
+                              onClick={() => onSelectConversation(conv.conversationId)}
+                              className={`group relative flex flex-col gap-1.5 px-6 py-3 cursor-pointer transition-all duration-200 ease-out ${
+                                isActive 
+                                  ? 'bg-white/5 border-l-[3px] border-sand' 
+                                  : 'border-l-[3px] border-transparent hover:bg-white/[0.02]'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <span className={`text-[12.5px] leading-snug truncate font-medium transition-colors duration-200 ${isActive ? 'text-sand' : 'text-sand/80 group-hover:text-sand'}`}>
+                                  {conv.title || 'Untitled'}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between h-4">
+                                <span className="text-taupe text-[10px] font-mono">
+                                  {relativeTime(conv.updatedAt)}
+                                </span>
+                                
+                                {/* Typographic Actions */}
+                                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  <button
+                                    onClick={(e) => handleExport(e, conv)}
+                                    className={`text-[9px] font-mono uppercase tracking-wider transition-colors duration-200 focus:outline-none ${
+                                      copiedId === conv.conversationId ? 'text-emerald' : 'text-taupe hover:text-sand'
+                                    }`}
+                                  >
+                                    {copiedId === conv.conversationId ? 'Copied' : 'Copy'}
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleTogglePin(e, conv)}
+                                    className="text-[9px] font-mono uppercase tracking-wider text-taupe hover:text-sand transition-colors duration-200 focus:outline-none"
+                                  >
+                                    {conv.isPinned ? 'Unpin' : 'Pin'}
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  ))}
+                </LayoutGroup>
+              )}
             </div>
 
-            <div className="mx-5 h-px bg-[#DDD8D2]/70" />
-
-            {/* Content */}
-            {activeTab === 'github' ? (
-              <div className="flex-1 overflow-hidden">
-                <GitHubPanel
+            {/* Integrations Footer */}
+            <div className="shrink-0 border-t border-white/5 bg-[#1C1C1E] flex flex-col h-[40vh] overflow-y-auto no-scrollbar">
+              <div className="h-1/2 min-h-[200px] border-b border-white/5 overflow-y-auto no-scrollbar relative">
+                <GitHubPanel 
                   isConnected={isGitHubConnected}
                   username={githubUser}
                   onConnect={onConnectGitHub}
@@ -240,181 +282,9 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                   onInjectFile={onInjectFile}
                 />
               </div>
-            ) : (
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-              {isLoading ? (
-                <div className="px-5 pt-4 space-y-3.5">
-                  {[68, 52, 60, 44, 68].map((w, i) => (
-                    <div key={i} className="space-y-1.5">
-                      <div className="h-[10px] rounded bg-[#DDD8D2]/40 animate-pulse" style={{ width: `${w}%` }} />
-                      <div className="h-[8px] w-9 rounded bg-[#DDD8D2]/25 animate-pulse" />
-                    </div>
-                  ))}
-                </div>
-              ) : conversations.length === 0 ? (
-                <div className="flex flex-col justify-center items-center h-full px-8 -mt-8">
-                  <p className="text-[12px] text-[#8C7A6B]/35 text-center leading-relaxed">
-                    Your conversations<br />will appear here.
-                  </p>
-                </div>
-              ) : (
-                <LayoutGroup>
-                  <div className="pt-1 pb-5">
-                    {grouped.map((group, groupIdx) => (
-                      <div key={group.label}>
-                        {/* Section label */}
-                        {group.label !== '__pinned__' && (
-                          <div className="px-5 pt-4 pb-1.5">
-                            <span className="text-[9px] font-semibold tracking-[0.14em] text-[#8C7A6B]/30 uppercase">
-                              {group.label}
-                            </span>
-                          </div>
-                        )}
-
-                        {group.items.map((conv) => {
-                          const isActive = activeConversationId === conv.conversationId;
-                          const isConfirming = confirmDeleteId === conv.conversationId;
-                          const isCopied = copiedId === conv.conversationId;
-
-                          return (
-                            <motion.div
-                              key={conv.conversationId}
-                              layout
-                              layoutId={conv.conversationId}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ layout: { type: 'spring', damping: 30, stiffness: 300 }, opacity: { duration: 0.2 } }}
-                            >
-                              {isConfirming ? (
-                                <div className="mx-3 my-0.5 px-3 py-2.5 rounded-lg bg-white border border-[#DDD8D2]/70">
-                                  <p className="text-[11px] text-[#3C3C3C]/65 leading-snug mb-2.5">
-                                    Delete this conversation?
-                                  </p>
-                                  <div className="flex gap-1.5">
-                                    <button
-                                      onClick={() => handleDelete(conv.conversationId)}
-                                      className="text-[10px] font-semibold text-[#C45C5C] hover:text-[#A33] px-2 py-0.5 rounded hover:bg-[#C45C5C]/5 transition-colors"
-                                    >
-                                      Delete
-                                    </button>
-                                    <button
-                                      onClick={() => setConfirmDeleteId(null)}
-                                      className="text-[10px] text-[#8C7A6B]/45 hover:text-[#8C7A6B]/75 px-2 py-0.5 rounded hover:bg-[#8C7A6B]/5 transition-colors"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={() => {
-                                    onSelectConversation(conv.conversationId);
-                                    onClose();
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      onSelectConversation(conv.conversationId);
-                                      onClose();
-                                    }
-                                  }}
-                                  className={`group w-full text-left cursor-pointer mx-1.5 rounded-lg transition-all duration-150 ${
-                                    isActive
-                                      ? 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)]'
-                                      : conv.isPinned
-                                        ? 'bg-[#A0845C]/[0.03] hover:bg-[#A0845C]/[0.06]'
-                                        : 'hover:bg-white/50'
-                                  }`}
-                                  style={{ width: 'calc(100% - 12px)' }}
-                                >
-                                  <div className="px-3.5 py-2.5 relative">
-                                    {/* Active dot */}
-                                    {isActive && (
-                                      <div className="absolute left-0.5 top-1/2 -translate-y-1/2 w-[2.5px] h-[2.5px] rounded-full bg-[#A0845C]" />
-                                    )}
-
-                                    {/* Title — crossfade transition on text change */}
-                                    <p
-                                      className={`text-[12.5px] leading-snug truncate pr-14 transition-opacity duration-300 ${
-                                        isActive ? 'text-[#3C3C3C] font-medium' : 'text-[#3C3C3C]/70'
-                                      }`}
-                                    >
-                                      {conv.title || 'New Conversation'}
-                                    </p>
-
-                                    {/* Meta */}
-                                    <p className="text-[9.5px] mt-0.5 text-[#8C7A6B]/30 tracking-wide">
-                                      <span className={conv.chatMode === 'operator' ? 'text-[#A0845C]/45' : 'text-blue-400/45'}>
-                                        {conv.chatMode === 'operator' ? 'Truth' : 'Gemini'}
-                                      </span>
-                                      <span className="mx-1">·</span>
-                                      {relativeTime(conv.updatedAt)}
-                                    </p>
-
-                                    {/* Hover actions: pin · copy · delete */}
-                                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 flex gap-2 items-center">
-                                      {/* Pin */}
-                                      <span
-                                        onClick={(e) => { e.stopPropagation(); handlePin(conv.conversationId, conv.isPinned); }}
-                                        className={`text-[9px] cursor-pointer transition-all duration-200 ${
-                                          conv.isPinned
-                                            ? 'text-[#A0845C]/40 hover:text-[#A0845C]/70'
-                                            : 'text-[#8C7A6B]/0 group-hover:text-[#8C7A6B]/20 hover:!text-[#A0845C]/50'
-                                        }`}
-                                      >
-                                        {conv.isPinned ? 'unpin' : 'pin'}
-                                      </span>
-                                      {/* Copy */}
-                                      <span
-                                        onClick={(e) => { e.stopPropagation(); handleCopy(conv); }}
-                                        className={`text-[9px] cursor-pointer transition-all duration-200 ${
-                                          isCopied
-                                            ? 'text-[#A0845C]/60'
-                                            : 'text-[#8C7A6B]/0 group-hover:text-[#8C7A6B]/20 hover:!text-[#8C7A6B]/50'
-                                        }`}
-                                      >
-                                        {isCopied ? '✓' : 'copy'}
-                                      </span>
-                                      {/* Delete */}
-                                      <span
-                                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.conversationId); }}
-                                        className="text-[9px] text-[#8C7A6B]/0 group-hover:text-[#8C7A6B]/20 hover:!text-[#C45C5C]/55 transition-all duration-200 cursor-pointer"
-                                      >
-                                        delete
-                                      </span>
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </motion.div>
-                          );
-                        })}
-
-                        {/* Separator after pinned section */}
-                        {group.label === '__pinned__' && groupIdx < grouped.length - 1 && (
-                          <div className="mx-5 mt-1 mb-0">
-                            <div className="h-px bg-[#A0845C]/10" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </LayoutGroup>
-              )}
-            </div>
-            )}
-
-            {/* Footer */}
-            <div className="px-5 py-3.5 border-t border-[#DDD8D2]/50">
-              <button
-                onClick={onClose}
-                className="text-[10px] font-medium text-[#8C7A6B]/25 hover:text-[#8C7A6B]/55 transition-colors duration-200"
-              >
-                close
-              </button>
+              <div className="h-1/2 min-h-[200px] overflow-y-auto no-scrollbar relative">
+                <WorkspacePanel />
+              </div>
             </div>
           </motion.aside>
         </>

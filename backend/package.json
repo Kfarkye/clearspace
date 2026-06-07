@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google-cloud/spanner": "^8.7.1",
+    "@google-cloud/storage": "^7.19.0",
     "@google-cloud/vertexai": "^1.12.0",
     "@google/genai": "^2.8.0",
     "@octokit/rest": "^22.0.1",

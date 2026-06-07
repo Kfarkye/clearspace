@@ -47,7 +47,6 @@ const Layout: React.FC = () => {
             )}
             <NavLink to="/" className="flex items-center gap-3 group">
               <div className="relative flex items-center justify-center w-2 h-2">
-                <span className="absolute w-full h-full rounded-full opacity-40 animate-ping bg-bronze" />
                 <span className="relative w-1.5 h-1.5 rounded-full bg-bronze" />
               </div>
               <span className="text-[11px] font-medium tracking-[0.25em] text-taupe select-none group-hover:text-charcoal transition-colors">

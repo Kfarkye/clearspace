@@ -30,7 +30,7 @@ export const ResilientDataLoader: React.FC = () => {
       <div className="w-full max-w-4xl bg-ink border border-clay/50 shadow-glass p-8 font-sans flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 bg-clay rounded-full animate-breathe"></span>
-          <h2 className="text-sand text-lg font-medium tracking-tight">System Fault Detected</h2>
+          <h2 className="text-sand text-lg font-medium tracking-tight">Error Loading Data</h2>
         </div>
         <p className="text-taupe text-sm font-mono bg-white/5 p-3 border border-white/5">{error}</p>
         <button 

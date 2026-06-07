@@ -57,7 +57,7 @@ const AuraYouTubeWrapper: React.FC<{ dataString: string }> = ({ dataString }) =>
     return (
       <div className="w-full bg-[#18181A] border border-[#C45C5C]/50 p-4 flex flex-col gap-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] rounded-2xl">
         <span className="font-mono text-xs text-[#C45C5C] uppercase tracking-widest">Render Fault</span>
-        <span className="font-sans text-sm text-taupe">Failed to parse media payload.</span>
+        <span className="font-sans text-sm text-taupe">Failed to load media.</span>
       </div>
     );
   }

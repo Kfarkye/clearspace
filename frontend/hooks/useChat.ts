@@ -146,7 +146,7 @@ export function useChat(workspaceToken: string | null) {
         } else {
           parts.push(JSON.stringify(asset.payload));
         }
-      } else {
+      } else if (asset.type !== 'SYSTEM_MESSAGE') {
         parts.push(JSON.stringify(asset.payload || {}));
       }
     }

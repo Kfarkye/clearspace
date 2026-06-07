@@ -56,13 +56,21 @@ export async function ingestMlbEvent(eventId, mode = 'live') {
   const compData = await resolveRef(compUrl);
 
   const fetchedAt = new Date().toISOString();
-  
+  // Extract dates and season
+  const startTimeStrRaw = compData.date || eventData.date || new Date().toISOString();
+  const startTimeObj = new Date(startTimeStrRaw);
+  const gameDateStr = startTimeObj.toISOString().substring(0, 10);
+  const seasonYear = eventData.season?.year || summaryData?.header?.season?.year || new Date().getFullYear();
+
   // Prepare MlbGames
   const mlbGamesRow = {
     EventId: eventId,
     CompetitionId: compData.id,
     Venue: compData.venue?.fullName || 'Unknown',
     Status: compData.status?.type?.description || eventData.status?.type?.description || 'Unknown',
+    GameDate: gameDateStr,
+    StartTime: startTimeObj,
+    Season: parseInt(seasonYear, 10),
     FetchedAt: 'spanner.commit_timestamp()'
   };
 

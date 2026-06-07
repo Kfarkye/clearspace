@@ -13,6 +13,7 @@ export default {
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
+        // Original Tokens
         alabaster: '#FAF9F6',
         sand: '#F4F3EF',
         clay: '#EAE8E1',
@@ -23,6 +24,11 @@ export default {
         'warm-gold': '#B8A590',
         sage: '#929B87',
         emerald: '#34D399',
+
+        // Alias Layer (Jony Ive Palette)
+        void: '#0F0F0E',        // Alias to ink
+        surface: '#1A1A18',     // Alias to charcoal
+        blue: '#0A84FF',        // New from Jony Ive palette
       },
       boxShadow: {
         'glass': '0 8px 32px rgba(140, 122, 107, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.6)',

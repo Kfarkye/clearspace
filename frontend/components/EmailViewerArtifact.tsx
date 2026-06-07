@@ -198,7 +198,7 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
         <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
           <div className="w-2 h-2 rounded-full bg-black/30" />
         </motion.div>
-        <span className="text-[13px] font-medium tracking-tight text-black/40">Decrypting mail payload...</span>
+        <span className="text-[13px] font-medium tracking-tight text-black/40">Loading email...</span>
       </div>
     );
   }

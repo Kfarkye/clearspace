@@ -13,7 +13,7 @@ const resolveRef = sharedResolveRef;
 const espnCache = new Map();
 const ESPN_CACHE_TTL_MS = 60_000; // 60 seconds
 
-function getCachedOrFetch(cacheKey, fetchFn) {
+function getCachedOrFetch(cacheKey) {
   const cached = espnCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp) < ESPN_CACHE_TTL_MS) {
     console.log(`[ESPN Cache] HIT: ${cacheKey}`);
@@ -49,10 +49,11 @@ export const espnScoreboard = async (req, res) => {
   }
 
   const dateParam = date ? `?dates=${date}` : '';
+  const coreQuery = date ? `?dates=${date}&limit=100` : `?limit=100`;
 
   // Fetch both APIs in parallel
   const siteUrl = `https://site.api.espn.com/apis/site/v2/sports/${mapping.site}/scoreboard${dateParam}`;
-  const coreUrl = `https://sports.core.api.espn.com/v2/sports/${mapping.core}/leagues/${mapping.league}/events${dateParam}&limit=100`;
+  const coreUrl = `https://sports.core.api.espn.com/v2/sports/${mapping.core}/leagues/${mapping.league}/events${coreQuery}`;
 
   console.log(`[ESPN Proxy] Site: ${siteUrl}`);
   console.log(`[ESPN Proxy] Core: ${coreUrl}`);
@@ -83,8 +84,8 @@ export const espnScoreboard = async (req, res) => {
         const coreData = await coreRes.json();
         const coreItems = coreData.items || [];
         
-        // Resolve event refs in parallel (cap at 15 to avoid hammering)
-        const eventRefs = coreItems.slice(0, 15).map(item => item.$ref).filter(Boolean);
+        // Resolve event refs in parallel (cap at 30 to handle heavy slates/doubleheaders)
+        const eventRefs = coreItems.slice(0, 30).map(item => item.$ref).filter(Boolean);
         const resolvedEvents = await Promise.all(eventRefs.map(ref => resolveRef(ref)));
         
         for (const evt of resolvedEvents) {
@@ -701,9 +702,17 @@ export const oddsApiOdds = async (req, res) => {
   }
 };
 
+const sportsQuerySchema = z.object({
+  query: z.string().min(1, 'Query cannot be empty')
+});
+
 export const intelligenceSportsQuery = async (req, res) => {
   try {
-    const result = await handleSportsQuery(req.body);
+    const parsed = sportsQuerySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation failed', issues: parsed.error.issues });
+    }
+    const result = await handleSportsQuery({ query: parsed.data.query });
     res.json(result);
   } catch (e) {
     console.error('[Intelligence:Sports] Error:', e);
@@ -713,7 +722,9 @@ export const intelligenceSportsQuery = async (req, res) => {
 
 export const intelligenceWinProbability = async (req, res) => {
   try {
-    const result = await handleWinProbabilityQuery(req.body);
+    const { eventId } = req.body;
+    if (!eventId) return res.status(400).json({ error: 'eventId is required' });
+    const result = await handleWinProbabilityQuery({ eventId });
     res.json(result);
   } catch (e) {
     console.error('[Intelligence:WinProb] Error:', e);
@@ -723,7 +734,9 @@ export const intelligenceWinProbability = async (req, res) => {
 
 export const intelligencePlayerProps = async (req, res) => {
   try {
-    const result = await handlePlayerPropQuery(req.body);
+    const { playerId } = req.body;
+    if (!playerId) return res.status(400).json({ error: 'playerId is required' });
+    const result = await handlePlayerPropQuery({ playerId });
     res.json(result);
   } catch (e) {
     console.error('[Intelligence:Props] Error:', e);
@@ -733,7 +746,9 @@ export const intelligencePlayerProps = async (req, res) => {
 
 export const intelligenceDataTable = async (req, res) => {
   try {
-    const result = await fetchDataTable(req.body.query);
+    const { query, context } = req.body;
+    if (!query) return res.status(400).json({ error: 'Query is required' });
+    const result = await fetchDataTable({ query, context });
     res.json(result);
   } catch (e) {
     console.error('[Intelligence:DataTable] Error:', e);

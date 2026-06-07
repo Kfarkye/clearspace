@@ -77,3 +77,75 @@ export async function fetchWithResilience(
 
   throw new Error(`Fetch failed after ${maxRetries} retries. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
 }
+
+export class IdleTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'IdleTimeoutError';
+  }
+}
+
+export async function streamingResilientFetch(
+  url: string | URL,
+  options: RequestInit & { idleTimeoutMs?: number } = {}
+): Promise<Response> {
+  const { idleTimeoutMs = 8000, ...fetchOptions } = options;
+  
+  const controller = new AbortController();
+  let timeoutId = setTimeout(() => {
+    controller.abort(new IdleTimeoutError('Initial connection timeout'));
+  }, idleTimeoutMs);
+
+  const response = await fetch(url, {
+    ...fetchOptions,
+    signal: controller.signal,
+  });
+
+  if (!response.body) {
+    clearTimeout(timeoutId);
+    return response;
+  }
+
+  const reader = response.body.getReader();
+  const stream = new ReadableStream({
+    async start(controllerStream) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          // Reset the idle timeout upon receiving a chunk
+          clearTimeout(timeoutId);
+          
+          if (done) {
+            controllerStream.close();
+            break;
+          }
+          
+          controllerStream.enqueue(value);
+          
+          // Arm the next idle timeout
+          timeoutId = setTimeout(() => {
+            const err = new IdleTimeoutError(`Stream stalled for ${idleTimeoutMs}ms`);
+            controller.abort(err);
+            controllerStream.error(err);
+          }, idleTimeoutMs);
+        }
+      } catch (err) {
+        controllerStream.error(err);
+      } finally {
+        clearTimeout(timeoutId);
+        reader.releaseLock();
+      }
+    },
+    cancel() {
+      clearTimeout(timeoutId);
+      reader.cancel();
+    }
+  });
+
+  return new Response(stream, {
+    headers: response.headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+}

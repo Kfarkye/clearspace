@@ -380,6 +380,14 @@ If the user query is a general sports recap, schedule, or factual update (NOT a 
 
 === GENERAL WORKSPACE & MEDIA PROTOCOL ===
 You are in General Mode. Analyze the user's query and use your available tools (including Workspace tools) to provide a rich, factual, and helpful response.
+
+SYSTEM ARCHITECTURE CONTEXT:
+You (Truth) are built on a highly scalable, serverless backend using Node.js and Google Cloud Run.
+Your primary database is Google Cloud Spanner, a globally distributed, strongly consistent relational database.
+Spanner acts as the single source of truth for:
+- User artifacts, chat histories, and platform state.
+- High-frequency sports intelligence data (matches, real-time odds, power ratings).
+When users ask about your infrastructure, memory, or how you store data, you can confidently explain that you leverage Cloud Spanner's ACID-compliant ledgers to ensure data integrity at scale.
 `;
   }
 
@@ -392,256 +400,83 @@ When asked for highlights, videos, or music (e.g., "play Knicks highlights", "sh
 }
 \`\`\`
 
-When asked for a sports recap, schedule, or match results, NEVER use markdown tables. You MUST output a structured HTML artifact using a code block with the language "html".
-You MUST use the following template to render the Premium Sports Recap Feed with CDN Assets:
-\`\`\`html
-<!-- Artifact Payload: Consumer Sports Feed (Type: HTML) -->
-<div class="w-full max-w-4xl bg-charcoal border border-white/5 shadow-glass p-6 md:p-8 font-sans flex flex-col gap-8">
-  
-  <header class="flex justify-between items-end border-b border-white/5 pb-4">
-    <div class="flex flex-col gap-1">
-      <time class="font-mono text-xs text-taupe uppercase tracking-widest">Jun 5, 2026</time>
-      <h1 class="text-sand text-2xl font-medium tracking-tight">MLB Daily Digest</h1>
-    </div>
-    <div class="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/5">
-      <span class="w-1.5 h-1.5 bg-taupe rounded-full"></span>
-      <span class="text-taupe text-[10px] font-mono uppercase tracking-wider">Final</span>
-    </div>
-  </header>
+When generating HTML artifacts, you MUST wrap the payload in a complete, standalone HTML5 document. 
+You MUST use the following `<head>` configuration to inject the Clearspace Design System. The aesthetic MUST be Jony Ive-inspired: OLED blacks, subtle hardware-like elevation, hairline borders, and flawless typographic rhythm. No generic "hacker" dark mode.
 
-  <section class="bg-ink border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] hover:border-white/10 transition-colors duration-300">
-    <div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-      
-      <div class="md:col-span-5 flex flex-col gap-5">
-        <div class="flex justify-between items-center opacity-50">
-          <div class="flex items-center gap-4">
-            <img src="https://a.espncdn.com/i/teamlogos/mlb/500/scoreboard/laa.png" alt="LAA" class="w-9 h-9 object-contain" />
-            <div>
-              <div class="text-taupe font-mono text-[10px]">32-30</div>
-              <div class="text-sand text-lg font-medium">Angels</div>
-            </div>
-          </div>
-          <div class="text-sand font-mono text-3xl tabular-nums">0</div>
-        </div>
-        
-        <div class="flex justify-between items-center">
-          <div class="flex items-center gap-4">
-            <img src="https://a.espncdn.com/i/teamlogos/mlb/500/scoreboard/lad.png" alt="LAD" class="w-9 h-9 object-contain" />
-            <div>
-              <div class="text-taupe font-mono text-[10px]">41-22</div>
-              <div class="text-sand text-lg font-medium">Dodgers</div>
-            </div>
-          </div>
-          <div class="text-sand font-mono text-3xl tabular-nums">1</div>
-        </div>
-      </div>
-
-      <div class="hidden md:block md:col-span-1 border-l border-white/5 h-full"></div>
-
-      <div class="md:col-span-6 flex flex-col gap-4">
-        <div class="flex items-center gap-4">
-          <img src="https://a.espncdn.com/combiner/i?img=/i/headshots/mlb/players/full/31872.png&w=96&h=96" alt="Freeman" class="w-12 h-12 rounded-full bg-white/5 border border-white/10 object-cover object-top" />
-          <div>
-            <div class="text-sand text-sm font-medium">F. Freeman Walk-Off HR</div>
-            <div class="text-taupe font-mono text-[10px] uppercase tracking-widest mt-0.5">Bot 9th • 108.2 MPH • 398 FT</div>
-          </div>
-        </div>
-        <p class="text-taupe text-sm leading-relaxed">
-          Roki Sasaki fires 7.0 IP of scoreless baseball (10 K, 0 H until 5th). Freeman ends the Freeway Series pitcher's duel with a solo shot off Kirby Yates.
-        </p>
-      </div>
-
-    </div>
-  </section>
-
-  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    
-    <div class="bg-ink border border-white/5 p-4 flex flex-col gap-4 hover:border-white/10 transition-colors duration-300">
-      <div class="flex flex-col gap-3">
-        <div class="flex justify-between items-center opacity-50">
-          <span class="text-sand text-sm">Cubs</span>
-          <span class="text-sand font-mono text-lg tabular-nums">3</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-sand text-sm font-medium">Giants</span>
-          <span class="text-sand font-mono text-lg tabular-nums">18</span>
-        </div>
-      </div>
-      <div class="pt-3 border-t border-white/5">
-        <div class="text-taupe text-xs">W. Adames HR in 7-run 6th</div>
-      </div>
-    </div>
-
-    <div class="bg-ink border border-white/5 p-4 flex flex-col gap-4 hover:border-white/10 transition-colors duration-300">
-      <div class="flex flex-col gap-3">
-        <div class="flex justify-between items-center opacity-50">
-          <span class="text-sand text-sm">Mariners</span>
-          <span class="text-sand font-mono text-lg tabular-nums">3</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-sand text-sm font-medium">Tigers</span>
-          <span class="text-sand font-mono text-lg tabular-nums">7</span>
-        </div>
-      </div>
-      <div class="pt-3 border-t border-white/5">
-        <div class="text-taupe text-xs">S. Torkelson 2-Run HR</div>
-      </div>
-    </div>
-
-    <div class="bg-ink border border-white/5 p-4 flex flex-col gap-4 hover:border-white/10 transition-colors duration-300">
-      <div class="flex flex-col gap-3">
-        <div class="flex justify-between items-center opacity-50">
-          <span class="text-sand text-sm">Yankees</span>
-          <span class="text-sand font-mono text-lg tabular-nums">3</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-sand text-sm font-medium">Red Sox</span>
-          <span class="text-sand font-mono text-lg tabular-nums">W</span>
-        </div>
-      </div>
-      <div class="pt-3 border-t border-white/5">
-        <div class="text-taupe text-xs">W. Contreras 2-4, HR, 3 RBI</div>
-      </div>
-    </div>
-
-  </section>
-</div>
-\`\`\`
-
-When the user asks to execute a prediction, trade, or place a bet, output an interactive execution canvas using an HTML code block with the language "html".
-You MUST use the following template to render the Consumer Prediction Canvas:
-\`\`\`html
-<!-- Artifact Payload: Consumer Prediction Canvas (Type: HTML) -->
-<div class="w-full bg-charcoal border border-white/5 shadow-glass p-6 font-sans flex flex-col gap-6">
-  
-  <!-- Header: The Intent -->
-  <div class="flex flex-col gap-2">
-    <span class="font-mono text-xs text-taupe uppercase tracking-widest">WWDC 2026</span>
-    <h2 class="text-sand text-xl font-medium tracking-tight leading-snug">
-      Will Apple announce new AR hardware?
-    </h2>
-    <div class="flex items-center gap-2 mt-1">
-      <span class="w-1.5 h-1.5 bg-emerald rounded-full animate-breathe"></span>
-      <span class="text-taupe text-xs font-mono">Consensus: 32% Yes</span>
-    </div>
-  </div>
-
-  <!-- Interactive State Machine -->
-  <div id="prediction-interface" class="flex flex-col gap-6">
-    
-    <!-- Tactile Selection -->
-    <div class="grid grid-cols-2 gap-3">
-      <button 
-        onclick="setOutcome('YES', 0.32)"
-        id="opt-yes"
-        class="relative overflow-hidden bg-ink border border-white/5 shadow-inset p-4 flex flex-col items-start gap-1 transition-all duration-300 ease-out hover:border-emerald/50 focus:outline-none"
-      >
-        <span class="text-sand font-medium text-lg">Yes</span>
-        <span class="text-taupe font-mono text-xs">Pays 3.1x</span>
-      </button>
-      
-      <button 
-        onclick="setOutcome('NO', 0.68)"
-        id="opt-no"
-        class="relative overflow-hidden bg-ink border border-white/5 shadow-inset p-4 flex flex-col items-start gap-1 transition-all duration-300 ease-out hover:border-clay/50 focus:outline-none"
-      >
-        <span class="text-sand font-medium text-lg">No</span>
-        <span class="text-taupe font-mono text-xs">Pays 1.4x</span>
-      </button>
-    </div>
-
-    <!-- The Stake (Hidden until selection) -->
-    <div id="stake-section" class="hidden flex-col gap-4 opacity-0 transition-opacity duration-500">
-      <div class="bg-ink border border-white/5 shadow-inset p-4 flex items-center justify-between">
-        <span class="text-taupe font-mono text-sm">Stake $</span>
-        <input 
-          type="number" 
-          id="stake-amount" 
-          value="50" 
-          oninput="calculateReturn()"
-          class="bg-transparent text-sand text-xl font-mono outline-none text-right w-32 placeholder-taupe/30" 
-        />
-      </div>
-
-      <div class="flex justify-between items-center px-1">
-        <span class="text-taupe text-sm">Potential Return</span>
-        <span id="projected-return" class="text-emerald font-mono text-lg">$156.25</span>
-      </div>
-
-      <!-- Execution -->
-      <button 
-        onclick="dispatchPrediction()" 
-        id="exec-btn"
-        class="w-full bg-sand text-ink py-4 font-medium text-sm shadow-btn hover:shadow-glass-hover transition-all duration-300 ease-out mt-2"
-      >
-        Confirm Prediction
-      </button>
-    </div>
-  </div>
-
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Typography: Inter mimics Apple's San Francisco -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Iconography -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Clearspace Design System Engine -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    let currentSelection = null;
-    let currentPrice = 0;
-
-    function setOutcome(choice, price) {
-      currentSelection = choice;
-      currentPrice = price;
-
-      const btnYes = document.getElementById('opt-yes');
-      const btnNo = document.getElementById('opt-no');
-      const stakeSection = document.getElementById('stake-section');
-
-      // Reset states
-      btnYes.className = "relative overflow-hidden bg-ink border border-white/5 shadow-inset p-4 flex flex-col items-start gap-1 transition-all duration-300 ease-out hover:border-emerald/50 focus:outline-none";
-      btnNo.className = "relative overflow-hidden bg-ink border border-white/5 shadow-inset p-4 flex flex-col items-start gap-1 transition-all duration-300 ease-out hover:border-clay/50 focus:outline-none";
-
-      // Apply active state
-      if (choice === 'YES') {
-        btnYes.classList.replace('border-white/5', 'border-emerald');
-        btnYes.classList.add('shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]');
-      } else {
-        btnNo.classList.replace('border-white/5', 'border-clay');
-        btnNo.classList.add('shadow-[inset_0_0_20px_rgba(217,119,87,0.1)]');
-      }
-
-      // Reveal stake section smoothly
-      stakeSection.classList.remove('hidden');
-      // Small delay to allow display:flex to apply before opacity transition
-      setTimeout(() => stakeSection.classList.remove('opacity-0'), 10);
-      
-      calculateReturn();
-    }
-
-    function calculateReturn() {
-      const amount = parseFloat(document.getElementById('stake-amount').value) || 0;
-      if (currentPrice > 0) {
-        const payout = (amount / currentPrice).toFixed(2);
-        document.getElementById('projected-return').innerText = \`$\${payout}\`;
-      }
-    }
-
-    function dispatchPrediction() {
-      const btn = document.getElementById('exec-btn');
-      const amount = document.getElementById('stake-amount').value;
-      
-      // Morph button to loading state
-      btn.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="w-1.5 h-1.5 bg-ink rounded-full animate-thinking-dot"></span><span class="w-1.5 h-1.5 bg-ink rounded-full animate-thinking-dot delay-75"></span><span class="w-1.5 h-1.5 bg-ink rounded-full animate-thinking-dot delay-150"></span></span>';
-      btn.classList.add('opacity-90', 'pointer-events-none');
-      
-      // Dispatch via IPC Bridge to AURA Host
-      if (window.executeAuraCommand) {
-        window.executeAuraCommand('Markets Specialist', { 
-          action: 'PLACE_PREDICTION', 
-          market: 'WWDC_2026_AR',
-          outcome: currentSelection, 
-          stake: amount,
-          implied_probability: currentPrice
-        });
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { 
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'], 
+            mono: ['JetBrains Mono', 'monospace'] 
+          },
+          colors: {
+            /* Jony Ive Palette */
+            void: '#000000',        /* Pure OLED Black */
+            surface: '#161618',     /* Subtle hardware elevation */
+            'surface-hover': '#1C1C1E',
+            sand: '#F5F5F7',        /* Apple hardware white */
+            taupe: '#86868B',       /* Apple secondary text */
+            emerald: '#34C759',     /* iOS Green */
+            clay: '#FF3B30',        /* iOS Red */
+            blue: '#0A84FF'         /* iOS Blue */
+          },
+          boxShadow: { 
+            'glass': '0 10px 40px -10px rgba(0,0,0,0.5)', 
+            'inset': 'inset 0 1px 0 rgba(255,255,255,0.04)' 
+          },
+          borderColor: {
+            DEFAULT: 'rgba(255,255,255,0.08)' /* Hairline borders */
+          },
+          animation: { 'breathe': 'breathe 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite' },
+          keyframes: { breathe: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }
+        }
       }
     }
   </script>
-</div>
-\`\`\`
+  <style>
+    body { 
+      background-color: #000000; 
+      color: #F5F5F7; 
+      display: flex; 
+      justify-content: center; 
+      padding: 3rem 1rem; 
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    /* Smooth out all transitions */
+    * { transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+  </style>
+</head>
+<body>
+  <!-- Artifact Payload Here -->
+  <script>
+    // Initialize icons with absolute precision
+    lucide.createIcons({
+      attrs: {
+        'stroke-width': 1.5,
+        'stroke': 'currentColor'
+      }
+    });
+  </script>
+</body>
+</html>
+```
 `;
 
   // Apply User Diagnostic prompt if chatMode is 'operator'
@@ -776,7 +611,7 @@ function buildAsset(type, title, payload, ownerUserId = 'system', sources = []) 
 }
 
 class ResilientNetworkClient {
-  static async executeWithTimeout(executionTask, timeoutMs = 12000) {
+  static async executeWithTimeout(executionTask, timeoutMs = 60000) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -930,13 +765,7 @@ export async function generateAsset(message, history = [], signal = null, chatMo
               const data = await fetchDataTable(call.args?.query);
               return buildAsset('DATA_TABLE', data.title || 'Data Table', data, 'system', sources);
             }
-            case 'query_workspace': {
-              if (!workspaceToken) return buildAsset('WORKSPACE_DOC', 'Workspace Not Connected', { text: 'Please connect your Google Workspace account in Settings to use this feature.' }, 'system', sources);
-              const workspaceResult = await handleWorkspaceQuery(call.args, workspaceToken);
-              
-              const textOutput = typeof workspaceResult === 'string' ? workspaceResult : JSON.stringify(workspaceResult, null, 2);
-              return buildAsset('WORKSPACE_DOC', 'Workspace Data', { text: textOutput }, 'system', sources);
-            }
+
             case 'query_github': {
               const data = await handleGithubQuery(call.args.action, call.args || {}, githubToken);
               return buildAsset('GITHUB_DATA', `GitHub Data: ${call.args.action}`, data, 'system', sources);
@@ -1041,6 +870,9 @@ export async function generateAsset(message, history = [], signal = null, chatMo
           }
         } catch (err) {
           console.error(`[CHAT] Tool ${call.name} failed:`, err.message);
+          if (err.message && err.message.includes('WORKSPACE_AUTH_EXPIRED')) {
+            return buildAsset('AUTH_EXPIRED', 'Workspace Auth Expired', { error: 'Your Google Workspace session has expired. Please reconnect to continue.' }, 'system', sources);
+          }
           return buildAsset('SYSTEM_MESSAGE', `Error: ${call.name}`, { error: err.message }, 'system', sources);
         }
       });

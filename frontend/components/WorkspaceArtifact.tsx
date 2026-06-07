@@ -47,7 +47,7 @@ export const WorkspaceArtifact: React.FC<WorkspaceArtifactProps> = ({ dataString
         <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
           <div className="w-2 h-2 rounded-full bg-black/30" />
         </motion.div>
-        <span className="text-[13px] font-medium tracking-tight text-black/40">Synthesizing workspace context...</span>
+        <span className="text-[13px] font-medium tracking-tight text-black/40">Loading workspace...</span>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export const WorkspaceArtifact: React.FC<WorkspaceArtifactProps> = ({ dataString
           </div>
           <div>
             <h3 className="text-[15px] font-semibold text-[#1D1D1F] tracking-tight leading-none mb-1.5">Workspace Context</h3>
-            <p className="text-[10px] font-medium text-black/40 uppercase tracking-[0.18em] leading-none">Intelligence Brief</p>
+            <p className="text-[10px] font-medium text-black/40 uppercase tracking-[0.18em] leading-none">Summary</p>
           </div>
         </div>
       </div>
