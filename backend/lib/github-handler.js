@@ -32,22 +32,41 @@ export async function handleGithubQuery(action, params, token) {
       }
       
       case 'get_tree': {
-        const { owner, repo } = params;
-        if (!owner || !repo) return { error: "Missing owner or repo" };
+        const { owner: repoOwner, repo: repoName } = params;
+        if (!repoOwner || !repoName) return { error: "Missing owner or repo" };
         
         let defaultBranch = 'main';
         try { 
-          defaultBranch = (await octokit.repos.get({ owner, repo })).data.default_branch; 
+          defaultBranch = (await octokit.repos.get({ owner: repoOwner, repo: repoName })).data.default_branch; 
         } catch (e) { /* fallback */ }
 
-        const { data } = await octokit.git.getTree({ owner, repo, tree_sha: defaultBranch, recursive: 'true' });
+        // Fetch the latest 5 commits automatically (stolen from audit)
+        const { data: commitsData } = await octokit.repos.listCommits({
+          owner: repoOwner,
+          repo: repoName,
+          per_page: 5
+        });
+
+        const { data: treeData } = await octokit.git.getTree({ owner: repoOwner, repo: repoName, tree_sha: defaultBranch, recursive: 'true' });
         const skipped = ['node_modules', 'dist', 'build', '.next', '.git', 'venv', '__pycache__', 'coverage', '.cache'];
         
-        const tree = data.tree
+        const maxTreeEntries = 150; // Increased slightly for visibility
+        const tree = treeData.tree
           .filter(t => !skipped.some(dir => t.path?.includes(`${dir}/`) || t.path?.startsWith(`${dir}/`)))
-          .map(t => ({ path: t.path, type: t.type, size: t.size }));
+          .map(t => ({ path: t.path, type: t.type === 'tree' ? 'directory' : 'file', size: t.size }))
+          .slice(0, maxTreeEntries);
           
-        return { branch: defaultBranch, totalFiles: tree.length, tree: tree.slice(0, 1000) }; // limit to 1000 items to save context
+        return { 
+          branch: defaultBranch, 
+          totalFiles: treeData.tree.length, 
+          tree,
+          latestCommits: commitsData.map(c => ({
+            sha: c.sha.substring(0, 7),
+            message: c.commit.message,
+            author: c.commit.author?.name || 'Unknown',
+            date: c.commit.author?.date
+          }))
+        };
       }
 
       case 'get_commits': {

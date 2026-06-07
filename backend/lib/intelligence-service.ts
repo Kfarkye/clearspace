@@ -206,17 +206,29 @@ const deepResearchToolDeclaration = {
 
 const githubToolDeclaration = {
   name: 'query_github',
-  description: 'A tool for interacting with the user\'s GitHub account. Use this to read git commits, browse file trees, or read real-time code.',
+  description: "Allows the agent to read real-time git commits, repository structures, and file contents from the user's GitHub account.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      action: { type: Type.STRING, description: 'The action to perform: list_repos, get_tree, get_commits, or read_file.' },
-      params: { 
-        type: Type.OBJECT, 
-        description: 'Parameters for the action. get_tree needs owner & repo. get_commits needs owner, repo, and optional limit. read_file needs owner, repo, and path.'
+      action: {
+        type: Type.STRING,
+        description: "The action to execute: 'list_repos' (gets user's repos), 'get_tree' (gets directory tree & latest commits), or 'read_file' (fetches raw content of a file).",
+        enum: ["list_repos", "get_tree", "read_file", "get_commits"]
+      },
+      owner: {
+        type: Type.STRING,
+        description: "The GitHub username or organization owner of the repository."
+      },
+      repo: {
+        type: Type.STRING,
+        description: "The name of the repository."
+      },
+      path: {
+        type: Type.STRING,
+        description: "The relative workspace file path within the repository. (Required for 'read_file')."
       }
     },
-    required: ['action']
+    required: ["action"]
   }
 };
 
@@ -926,7 +938,7 @@ export async function generateAsset(message, history = [], signal = null, chatMo
               return buildAsset('WORKSPACE_DOC', 'Workspace Data', { text: textOutput }, 'system', sources);
             }
             case 'query_github': {
-              const data = await handleGithubQuery(call.args.action, call.args.params || {}, githubToken);
+              const data = await handleGithubQuery(call.args.action, call.args || {}, githubToken);
               return buildAsset('GITHUB_DATA', `GitHub Data: ${call.args.action}`, data, 'system', sources);
             }
             case 'get_mlb_core_ledger': {
