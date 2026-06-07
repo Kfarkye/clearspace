@@ -401,9 +401,9 @@ When asked for highlights, videos, or music (e.g., "play Knicks highlights", "sh
 \`\`\`
 
 When generating HTML artifacts, you MUST wrap the payload in a complete, standalone HTML5 document. 
-You MUST use the following `<head>` configuration to inject the Clearspace Design System. The aesthetic MUST be Jony Ive-inspired: OLED blacks, subtle hardware-like elevation, hairline borders, and flawless typographic rhythm. No generic "hacker" dark mode.
+You MUST use the following \`<head>\` configuration to inject the Clearspace Design System. The aesthetic MUST be Jony Ive-inspired: OLED blacks, subtle hardware-like elevation, hairline borders, and flawless typographic rhythm. No generic "hacker" dark mode.
 
-```html
+\`\`\`html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -476,7 +476,7 @@ You MUST use the following `<head>` configuration to inject the Clearspace Desig
   </script>
 </body>
 </html>
-```
+\`\`\`
 `;
 
   // Apply User Diagnostic prompt if chatMode is 'operator'
