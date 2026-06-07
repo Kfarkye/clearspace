@@ -63,13 +63,11 @@ mountGitHubRoutes(app);
 import proxyRoutes from './routes/proxyRoutes.js';
 import dataRoutes from './routes/dataRoutes.js';
 import sportsRoutes from './routes/sportsRoutes.js';
-import compilerRoutes from './routes/compilerRoutes.js';
 import assetsRoutes from './routes/assets.js';
 import artifactRoutes from './routes/artifactRoutes.js';
 import { getAccessToken } from './controllers/proxyController.js';
 // --- 3. STANDARD API ROUTES ---
 app.use('/api/data', dataRoutes);
-app.use('/api/compiler', compilerRoutes);
 app.use('/api/assets', assetsRoutes);
 app.use('/artifact', artifactRoutes);
 app.use('/', sportsRoutes);

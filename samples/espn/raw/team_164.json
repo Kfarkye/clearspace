@@ -1,0 +1,167 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/teams/164?lang=en&region=us",
+  "id": "164",
+  "guid": "99314f68-1c92-218b-b02b-67c50ff9bc3a",
+  "uid": "s:600~t:164",
+  "alternateIds": {
+    "sdr": "17224"
+  },
+  "slug": "esp",
+  "location": "Spain",
+  "name": "Spain",
+  "abbreviation": "ESP",
+  "displayName": "Spain",
+  "shortDisplayName": "Spain",
+  "color": "c60b1e",
+  "alternateColor": "f1ff91",
+  "isActive": true,
+  "isAllStar": false,
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/countries/500/esp.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "default"
+      ],
+      "lastUpdated": "2023-11-13T17:38Z"
+    },
+    {
+      "href": "https://a.espncdn.com/i/teamlogos/countries/500-dark/esp.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "dark"
+      ],
+      "lastUpdated": "2023-11-13T17:39Z"
+    }
+  ],
+  "record": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/teams/164/record?lang=en&region=us"
+  },
+  "athletes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/teams/164/athletes?lang=en&region=us"
+  },
+  "venue": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/venues/4159?lang=en&region=us",
+    "id": "4159",
+    "guid": "9155057b-80c4-3b39-8e86-e13f5a64cb79",
+    "fullName": "RCDE Stadium",
+    "shortName": "RCDE Stadium",
+    "address": {
+      "city": "Barcelona",
+      "country": "Spain"
+    },
+    "images": []
+  },
+  "groups": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/groups/8?lang=en&region=us"
+  },
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "clubhouse",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/soccer/team/_/id/164/spain",
+      "text": "Clubhouse",
+      "shortText": "Clubhouse",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/soccer/team/stats/_/id/164/spain",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "schedule",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/soccer/team/fixtures/_/id/164/spain",
+      "text": "Fixtures",
+      "shortText": "Fixtures",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "results",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/soccer/team/results/_/id/164/spain",
+      "text": "Results",
+      "shortText": "Results",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "standings",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/soccer/standings/_/league/fifa.world",
+      "text": "Standings",
+      "shortText": "Standings",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "squad",
+        "desktop",
+        "team"
+      ],
+      "href": "https://www.espn.com/soccer/team/squad/_/id/164/spain",
+      "text": "Squad",
+      "shortText": "Squad",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "injuries": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/teams/164/injuries?lang=en&region=us"
+  },
+  "notes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/teams/164/notes?lang=en&region=us"
+  },
+  "franchise": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/franchises/164?lang=en&region=us"
+  },
+  "events": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/teams/164/events?lang=en&region=us"
+  },
+  "coaches": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/teams/164/coaches?lang=en&region=us"
+  },
+  "seasons": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/teams/164/seasons?lang=en&region=us"
+  },
+  "isNational": true,
+  "form": "DDWDW",
+  "defaultLeague": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world?lang=en&region=us"
+  }
+}

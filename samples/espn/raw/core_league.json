@@ -1,0 +1,361 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world?lang=en&region=us",
+  "id": "606",
+  "guid": "34f478c4-cf9a-35da-abd5-33db021e09d2",
+  "uid": "s:600~l:606",
+  "alternateId": "4",
+  "name": "FIFA World Cup",
+  "displayName": "World Cup",
+  "abbreviation": "FIFA World Cup",
+  "shortName": "FIFA World Cup",
+  "midsizeName": "FIFA.WORLD",
+  "slug": "fifa.world",
+  "isTournament": true,
+  "season": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026?lang=en&region=us",
+    "year": 2026,
+    "startDate": "2026-06-11T04:00Z",
+    "endDate": "2026-12-31T04:59Z",
+    "displayName": "2026 FIFA World Cup",
+    "shortDisplayName": "2026 FIFA World Cup",
+    "abbreviation": "2026",
+    "type": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1?lang=en&region=us",
+      "id": "1",
+      "type": 13802,
+      "name": "Group Stage",
+      "abbreviation": "Group Stage",
+      "startDate": "2026-06-11T04:00Z",
+      "endDate": "2026-06-28T03:59Z",
+      "hasGroups": true,
+      "hasStandings": true,
+      "hasLiveStandings": false,
+      "hasLegs": false,
+      "hasStats": true,
+      "isFinal": false,
+      "isThirdPlace": false,
+      "groups": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/groups?lang=en&region=us"
+      },
+      "slug": "group-stage"
+    },
+    "types": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types?lang=en&region=us",
+      "count": 7,
+      "pageIndex": 1,
+      "pageSize": 7,
+      "pageCount": 1,
+      "items": [
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1?lang=en&region=us",
+          "id": "1",
+          "type": 13802,
+          "name": "Group Stage",
+          "abbreviation": "Group Stage",
+          "startDate": "2026-06-11T04:00Z",
+          "endDate": "2026-06-28T03:59Z",
+          "hasGroups": true,
+          "hasStandings": true,
+          "hasLiveStandings": false,
+          "hasLegs": false,
+          "hasStats": true,
+          "isFinal": false,
+          "isThirdPlace": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/groups?lang=en&region=us"
+          },
+          "slug": "group-stage"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/2?lang=en&region=us",
+          "id": "2",
+          "type": 13801,
+          "name": "Round of 32",
+          "abbreviation": "Round of 32",
+          "startDate": "2026-06-28T04:00Z",
+          "endDate": "2026-07-04T03:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLiveStandings": false,
+          "hasLegs": false,
+          "hasStats": false,
+          "isFinal": false,
+          "isThirdPlace": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/2/groups?lang=en&region=us"
+          },
+          "slug": "round-of-32"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/3?lang=en&region=us",
+          "id": "3",
+          "type": 13800,
+          "name": "Round of 16",
+          "abbreviation": "Round of 16",
+          "startDate": "2026-07-04T04:00Z",
+          "endDate": "2026-07-09T03:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLiveStandings": false,
+          "hasLegs": false,
+          "hasStats": false,
+          "isFinal": false,
+          "isThirdPlace": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/3/groups?lang=en&region=us"
+          },
+          "slug": "round-of-16"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/4?lang=en&region=us",
+          "id": "4",
+          "type": 13799,
+          "name": "Quarterfinals",
+          "abbreviation": "Quarterfinals",
+          "startDate": "2026-07-09T04:00Z",
+          "endDate": "2026-07-14T03:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLiveStandings": false,
+          "hasLegs": false,
+          "hasStats": false,
+          "isFinal": false,
+          "isThirdPlace": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/4/groups?lang=en&region=us"
+          },
+          "slug": "quarterfinals"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/5?lang=en&region=us",
+          "id": "5",
+          "type": 13798,
+          "name": "Semifinals",
+          "abbreviation": "Semifinals",
+          "startDate": "2026-07-14T04:00Z",
+          "endDate": "2026-07-19T03:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLiveStandings": false,
+          "hasLegs": false,
+          "hasStats": false,
+          "isFinal": false,
+          "isThirdPlace": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/5/groups?lang=en&region=us"
+          },
+          "slug": "semifinals"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/6?lang=en&region=us",
+          "id": "6",
+          "type": 13797,
+          "name": "3rd-Place Match",
+          "abbreviation": "3rd-Place Match",
+          "startDate": "2026-07-18T04:00Z",
+          "endDate": "2026-07-19T03:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLiveStandings": false,
+          "hasLegs": false,
+          "hasStats": false,
+          "isFinal": false,
+          "isThirdPlace": true,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/6/groups?lang=en&region=us"
+          },
+          "slug": "3rd-place-match"
+        },
+        {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/7?lang=en&region=us",
+          "id": "7",
+          "type": 13803,
+          "name": "Final",
+          "abbreviation": "Final",
+          "startDate": "2026-07-19T04:00Z",
+          "endDate": "2026-08-01T03:59Z",
+          "hasGroups": false,
+          "hasStandings": false,
+          "hasLiveStandings": false,
+          "hasLegs": false,
+          "hasStats": false,
+          "isFinal": true,
+          "isThirdPlace": false,
+          "groups": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/7/groups?lang=en&region=us"
+          },
+          "slug": "final"
+        }
+      ]
+    },
+    "athletes": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes?lang=en&region=us"
+    },
+    "tournament": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/tournaments/4/seasons/2026?lang=en&region=us"
+    }
+  },
+  "seasons": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons?lang=en&region=us"
+  },
+  "franchises": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/franchises?lang=en&region=us"
+  },
+  "teams": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/teams?lang=en&region=us"
+  },
+  "group": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/groups/606?lang=en&region=us"
+  },
+  "groups": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/groups?lang=en&region=us"
+  },
+  "events": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/events?lang=en&region=us"
+  },
+  "notes": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/notes?lang=en&region=us"
+  },
+  "rankings": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/rankings?lang=en&region=us"
+  },
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "index",
+        "desktop",
+        "league"
+      ],
+      "href": "https://www.espn.com/soccer/worldcup/",
+      "text": "Index",
+      "shortText": "Index",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "schedule",
+        "desktop",
+        "league"
+      ],
+      "href": "https://www.espn.com/soccer/schedule/_/league/fifa.world",
+      "text": "Schedule",
+      "shortText": "Schedule",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "schedule",
+        "sportscenter",
+        "app",
+        "league"
+      ],
+      "href": "sportscenter://x-callback-url/showClubhouse?uid=s:600~l:606&section=scores",
+      "text": "Schedule",
+      "shortText": "Schedule",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "standings",
+        "desktop",
+        "league"
+      ],
+      "href": "https://www.espn.com/soccer/table/_/league/fifa.world",
+      "text": "Standings",
+      "shortText": "Standings",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "scores",
+        "desktop",
+        "league"
+      ],
+      "href": "https://www.espn.com/soccer/scoreboard/_/league/fifa.world",
+      "text": "Scores",
+      "shortText": "Scores",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "scores",
+        "sportscenter",
+        "app",
+        "league"
+      ],
+      "href": "sportscenter://x-callback-url/showClubhouse?uid=s:600~l:606&section=scores",
+      "text": "Scores",
+      "shortText": "Scores",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "league"
+      ],
+      "href": "https://www.espn.com/soccer/stats/_/league/fifa.world",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "teams",
+        "desktop",
+        "league"
+      ],
+      "href": "https://www.espn.com/soccer/teams/_/league/fifa.world",
+      "text": "Teams",
+      "shortText": "Teams",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "logos": [
+    {
+      "href": "https://a.espncdn.com/i/leaguelogos/soccer/500/4.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "default"
+      ],
+      "lastUpdated": "2025-06-16T14:56Z"
+    },
+    {
+      "href": "https://a.espncdn.com/i/leaguelogos/soccer/500-dark/4.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+        "full",
+        "dark"
+      ],
+      "lastUpdated": "2025-06-16T14:56Z"
+    }
+  ],
+  "calendar": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/calendar?lang=en&region=us"
+  },
+  "transactions": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/transactions?lang=en&region=us"
+  },
+  "gender": "MALE"
+}

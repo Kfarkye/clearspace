@@ -1,0 +1,83 @@
+{
+  "count": 26,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 2,
+  "items": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/137038?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/236368?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/290899?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/132098?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/178746?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/224323?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/241627?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/259975?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/290414?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/379193?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/104497?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/207011?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/242614?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/276942?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/283827?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/303577?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/318554?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/389575?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/167060?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/193566?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/194308?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/229487?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/233075?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/260775?lang=en&region=us"
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/265969?lang=en&region=us"
+    }
+  ]
+}

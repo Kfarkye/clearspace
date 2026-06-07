@@ -1,0 +1,45 @@
+{
+  "phase3_lineups": [
+    {
+      "match_id": "401872931",
+      "projected_players_checked": 30,
+      "matched_in_players_table": 30,
+      "unmatched_players": []
+    },
+    {
+      "match_id": "401872930",
+      "projected_players_checked": 30,
+      "matched_in_players_table": 30,
+      "unmatched_players": []
+    },
+    {
+      "match_id": "401872926",
+      "projected_players_checked": 30,
+      "matched_in_players_table": 30,
+      "unmatched_players": []
+    }
+  ],
+  "phase4_injuries": {
+    "total_rows": 169,
+    "stale_count": 169,
+    "conflicts": [
+      "Player Trey Benson is marked as injured (Questionable) but is in a projected XI.",
+      "Player James Conner is marked as injured (Questionable) but is in a projected XI.",
+      "Player Rashod Bateman is marked as injured (Questionable) but is in a projected XI.",
+      "Player Erick All Jr. is marked as injured (Questionable) but is in a projected XI.",
+      "Player Tank Dell is marked as injured (Questionable) but is in a projected XI.",
+      "Player Trent Brown is marked as injured (Questionable) but is in a projected XI.",
+      "Player Joe Alt is marked as injured (Questionable) but is in a projected XI.",
+      "Player De'Von Achane is marked as injured (Questionable) but is in a projected XI.",
+      "Player Chris Bell is marked as injured (Questionable) but is in a projected XI.",
+      "Player Caleb Douglas is marked as injured (Questionable) but is in a projected XI.",
+      "Player Gavin Bartholomew is marked as injured (Questionable) but is in a projected XI.",
+      "Player Christian Darrisaw is marked as injured (Questionable) but is in a projected XI.",
+      "Player Beaux Collins is marked as injured (Questionable) but is in a projected XI.",
+      "Player Zach Charbonnet is marked as injured (Questionable) but is in a projected XI.",
+      "Player AJ Barner is marked as injured (Questionable) but is in a projected XI.",
+      "Player Brandon Aiyuk is marked as injured (Out) but is in a projected XI."
+    ]
+  },
+  "phase5_variance": []
+}

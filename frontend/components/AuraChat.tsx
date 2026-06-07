@@ -12,13 +12,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChatInput } from './ChatInput';
 import { BettingAnglesArtifact } from './BettingAnglesArtifact';
 import { WorkspaceArtifact } from './WorkspaceArtifact';
-import { TravelHealthArtifact } from './TravelHealthArtifact';
 import { SidebarArtifact } from './SidebarArtifact';
-import { CodeSandboxArtifact } from './CodeSandboxArtifact';
 import { HtmlArtifact } from './HtmlArtifact';
 import { ScoreboardArtifact } from './ScoreboardArtifact';
 import { DataTableArtifact } from './DataTableArtifact';
-import { LicensingArtifact } from './LicensingArtifact';
 import { WorldCupArtifact } from './WorldCupArtifact';
 import { WorldCupGroupArtifact } from './WorldCupGroupArtifact';
 import { AuraYouTube } from './AuraYouTube';
@@ -71,11 +68,8 @@ const ARTIFACT_REGISTRY = [
   { id: 'bettingangles', match: (l: string, c: string) => l.includes('bettingangles') || (c.includes('"analysis_markdown"') && c.includes('"angles"')), component: BettingAnglesArtifact },
   { id: 'emailviewer', match: (l: string, c: string) => l.includes('emailviewer') || (c.includes('"sender"') && (c.includes('"bodyHtml"') || c.includes('"bodyText"'))), component: EmailViewerArtifact },
   { id: 'workspace', match: (l: string, c: string) => l.includes('workspace') || (c.includes('"emails"') && c.includes('"schedule"')), component: WorkspaceArtifact },
-  { id: 'travelhealth', match: (l: string, c: string) => l.includes('travelhealth') || c.includes('"job_matches"'), component: TravelHealthArtifact },
   { id: 'sidebar', match: (l: string, c: string) => l.includes('sidebar') || c.includes('"action_prompt"'), component: SidebarArtifact },
-  { id: 'codesandbox', match: (l: string, c: string) => l.includes('codesandbox') || c.includes('"explanation_markdown"'), component: CodeSandboxArtifact },
   { id: 'datatable', match: (l: string, c: string) => l.includes('datatable') || (c.includes('"columns"') && c.includes('"rows"')), component: DataTableArtifact },
-  { id: 'licensing', match: (l: string, c: string) => l.includes('licensing') || (c.includes('"profession"') && c.includes('"requirements"') && c.includes('"state"')), component: LicensingArtifact },
   { id: 'world_cup_group', match: (l: string, c: string) => l.includes('world_cup_group') || (c.includes('"event_name"') && c.includes('"group_name"') && c.includes('"teams"')), component: WorldCupGroupArtifact },
   { id: 'world_cup_profile', match: (l: string, c: string) => l.includes('world_cup') || (c.includes('"tactical_outlook"') && c.includes('"team"') && c.includes('"key_players"')), component: WorldCupArtifact },
   { id: 'youtube_media', match: (l: string, c: string) => l.includes('youtube') || (c.includes('"videos"') && (c.includes('"thumbnail"') || c.includes('"videoId"'))) || (c.includes('"query"') && (c.includes('youtube') || c.includes('video') || c.includes('media') || c.includes('youtube_media'))), component: AuraYouTubeWrapper },

@@ -1,0 +1,1298 @@
+{
+  "metadata": {
+    "generated_at": "2026-06-07T16:39:08.809Z",
+    "rows_to_keep": 124,
+    "rows_to_quarantine": 144,
+    "affected_team_codes": [
+      "ALG",
+      "ARG",
+      "AUS",
+      "AUT",
+      "BEL",
+      "BIH",
+      "BRA",
+      "CAN",
+      "CIV",
+      "COD",
+      "COL",
+      "CPV",
+      "CRO",
+      "CUR",
+      "CZE",
+      "ECU",
+      "EGY",
+      "ENG",
+      "ESP",
+      "FRA",
+      "GER",
+      "GHA",
+      "HAI",
+      "IRN",
+      "IRQ",
+      "JOR",
+      "JPN",
+      "KOR",
+      "KSA",
+      "MAR",
+      "MEX",
+      "NED",
+      "NOR",
+      "NZL",
+      "PAN",
+      "PAR",
+      "POR",
+      "QAT",
+      "RSA",
+      "SCO",
+      "SEN",
+      "SUI",
+      "SWE",
+      "TUN",
+      "TUR",
+      "URU",
+      "USA",
+      "UZB"
+    ]
+  },
+  "quarantine_strategy": {
+    "action": "DELETE",
+    "rollback": "UPSERT using this very JSON artifact",
+    "target": "players WHERE league_id = 'WORLD_CUP' AND (player_id LIKE 'player-%' OR name LIKE 'Player %' OR provenance IS NULL)"
+  },
+  "quarantine_rows": [
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ALG",
+      "player_id": "player-alg-1",
+      "name": "Player One (ALG)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ALG",
+      "player_id": "player-alg-2",
+      "name": "Player Two (ALG)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ALG",
+      "player_id": "player-alg-3",
+      "name": "Player Three (ALG)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ARG",
+      "player_id": "player-arg-1",
+      "name": "Lionel Messi",
+      "position": "Forward",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ARG",
+      "player_id": "player-arg-2",
+      "name": "Alexis Mac Allister",
+      "position": "Midfielder",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ARG",
+      "player_id": "player-arg-3",
+      "name": "Emiliano Martínez",
+      "position": "Goalkeeper",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUS",
+      "player_id": "player-aus-1",
+      "name": "Player One (AUS)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUS",
+      "player_id": "player-aus-2",
+      "name": "Player Two (AUS)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUS",
+      "player_id": "player-aus-3",
+      "name": "Player Three (AUS)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUT",
+      "player_id": "player-aut-1",
+      "name": "Player One (AUT)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUT",
+      "player_id": "player-aut-2",
+      "name": "Player Two (AUT)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUT",
+      "player_id": "player-aut-3",
+      "name": "Player Three (AUT)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BEL",
+      "player_id": "player-bel-1",
+      "name": "Player One (BEL)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BEL",
+      "player_id": "player-bel-2",
+      "name": "Player Two (BEL)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BEL",
+      "player_id": "player-bel-3",
+      "name": "Player Three (BEL)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BIH",
+      "player_id": "player-bih-1",
+      "name": "Player One (BIH)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BIH",
+      "player_id": "player-bih-2",
+      "name": "Player Two (BIH)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BIH",
+      "player_id": "player-bih-3",
+      "name": "Player Three (BIH)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BRA",
+      "player_id": "player-bra-1",
+      "name": "Vinícius Júnior",
+      "position": "Forward",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BRA",
+      "player_id": "player-bra-2",
+      "name": "Rodrygo Goes",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "BRA",
+      "player_id": "player-bra-3",
+      "name": "Alisson Becker",
+      "position": "Goalkeeper",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CAN",
+      "player_id": "player-can-1",
+      "name": "Player One (CAN)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CAN",
+      "player_id": "player-can-2",
+      "name": "Player Two (CAN)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CAN",
+      "player_id": "player-can-3",
+      "name": "Player Three (CAN)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CIV",
+      "player_id": "player-civ-1",
+      "name": "Player One (CIV)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CIV",
+      "player_id": "player-civ-2",
+      "name": "Player Two (CIV)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CIV",
+      "player_id": "player-civ-3",
+      "name": "Player Three (CIV)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "COD",
+      "player_id": "player-cod-1",
+      "name": "Player One (COD)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "COD",
+      "player_id": "player-cod-2",
+      "name": "Player Two (COD)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "COD",
+      "player_id": "player-cod-3",
+      "name": "Player Three (COD)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "COL",
+      "player_id": "player-col-1",
+      "name": "Player One (COL)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "COL",
+      "player_id": "player-col-2",
+      "name": "Player Two (COL)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "COL",
+      "player_id": "player-col-3",
+      "name": "Player Three (COL)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CPV",
+      "player_id": "player-cpv-1",
+      "name": "Player One (CPV)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CPV",
+      "player_id": "player-cpv-2",
+      "name": "Player Two (CPV)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CPV",
+      "player_id": "player-cpv-3",
+      "name": "Player Three (CPV)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CRO",
+      "player_id": "player-cro-1",
+      "name": "Player One (CRO)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CRO",
+      "player_id": "player-cro-2",
+      "name": "Player Two (CRO)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CRO",
+      "player_id": "player-cro-3",
+      "name": "Player Three (CRO)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CUR",
+      "player_id": "player-cur-1",
+      "name": "Player One (CUR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CUR",
+      "player_id": "player-cur-2",
+      "name": "Player Two (CUR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CUR",
+      "player_id": "player-cur-3",
+      "name": "Player Three (CUR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CZE",
+      "player_id": "player-cze-1",
+      "name": "Player One (CZE)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CZE",
+      "player_id": "player-cze-2",
+      "name": "Player Two (CZE)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "CZE",
+      "player_id": "player-cze-3",
+      "name": "Player Three (CZE)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ECU",
+      "player_id": "player-ecu-1",
+      "name": "Player One (ECU)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ECU",
+      "player_id": "player-ecu-2",
+      "name": "Player Two (ECU)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ECU",
+      "player_id": "player-ecu-3",
+      "name": "Player Three (ECU)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "EGY",
+      "player_id": "player-egy-1",
+      "name": "Player One (EGY)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "EGY",
+      "player_id": "player-egy-2",
+      "name": "Player Two (EGY)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "EGY",
+      "player_id": "player-egy-3",
+      "name": "Player Three (EGY)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ENG",
+      "player_id": "player-eng-1",
+      "name": "Harry Kane",
+      "position": "Forward",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ENG",
+      "player_id": "player-eng-2",
+      "name": "Jude Bellingham",
+      "position": "Midfielder",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ENG",
+      "player_id": "player-eng-3",
+      "name": "Bukayo Saka",
+      "position": "Forward",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ESP",
+      "player_id": "player-esp-1",
+      "name": "Player One (ESP)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ESP",
+      "player_id": "player-esp-2",
+      "name": "Player Two (ESP)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ESP",
+      "player_id": "player-esp-3",
+      "name": "Player Three (ESP)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "FRA",
+      "player_id": "player-fra-1",
+      "name": "Kylian Mbappé",
+      "position": "Forward",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "FRA",
+      "player_id": "player-fra-2",
+      "name": "Antoine Griezmann",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "FRA",
+      "player_id": "player-fra-3",
+      "name": "William Saliba",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "GER",
+      "player_id": "player-ger-1",
+      "name": "Player One (GER)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "GER",
+      "player_id": "player-ger-2",
+      "name": "Player Two (GER)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "GER",
+      "player_id": "player-ger-3",
+      "name": "Player Three (GER)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "GHA",
+      "player_id": "player-gha-1",
+      "name": "Player One (GHA)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "GHA",
+      "player_id": "player-gha-2",
+      "name": "Player Two (GHA)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "GHA",
+      "player_id": "player-gha-3",
+      "name": "Player Three (GHA)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "HAI",
+      "player_id": "player-hai-1",
+      "name": "Player One (HAI)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "HAI",
+      "player_id": "player-hai-2",
+      "name": "Player Two (HAI)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "HAI",
+      "player_id": "player-hai-3",
+      "name": "Player Three (HAI)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "IRN",
+      "player_id": "player-irn-1",
+      "name": "Player One (IRN)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "IRN",
+      "player_id": "player-irn-2",
+      "name": "Player Two (IRN)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "IRN",
+      "player_id": "player-irn-3",
+      "name": "Player Three (IRN)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "IRQ",
+      "player_id": "player-irq-1",
+      "name": "Player One (IRQ)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "IRQ",
+      "player_id": "player-irq-2",
+      "name": "Player Two (IRQ)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "IRQ",
+      "player_id": "player-irq-3",
+      "name": "Player Three (IRQ)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "JOR",
+      "player_id": "player-jor-1",
+      "name": "Player One (JOR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "JOR",
+      "player_id": "player-jor-2",
+      "name": "Player Two (JOR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "JOR",
+      "player_id": "player-jor-3",
+      "name": "Player Three (JOR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "JPN",
+      "player_id": "player-jpn-1",
+      "name": "Player One (JPN)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "JPN",
+      "player_id": "player-jpn-2",
+      "name": "Player Two (JPN)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "JPN",
+      "player_id": "player-jpn-3",
+      "name": "Player Three (JPN)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "KOR",
+      "player_id": "player-kor-1",
+      "name": "Player One (KOR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "KOR",
+      "player_id": "player-kor-2",
+      "name": "Player Two (KOR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "KOR",
+      "player_id": "player-kor-3",
+      "name": "Player Three (KOR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "KSA",
+      "player_id": "player-ksa-1",
+      "name": "Player One (KSA)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "KSA",
+      "player_id": "player-ksa-2",
+      "name": "Player Two (KSA)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "KSA",
+      "player_id": "player-ksa-3",
+      "name": "Player Three (KSA)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "MAR",
+      "player_id": "player-mar-1",
+      "name": "Player One (MAR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "MAR",
+      "player_id": "player-mar-2",
+      "name": "Player Two (MAR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "MAR",
+      "player_id": "player-mar-3",
+      "name": "Player Three (MAR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "MEX",
+      "player_id": "player-mex-1",
+      "name": "Santiago Giménez",
+      "position": "Forward",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "MEX",
+      "player_id": "player-mex-2",
+      "name": "Edson Álvarez",
+      "position": "Midfielder",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "MEX",
+      "player_id": "player-mex-3",
+      "name": "Luis Chávez",
+      "position": "Midfielder",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NED",
+      "player_id": "player-ned-1",
+      "name": "Player One (NED)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NED",
+      "player_id": "player-ned-2",
+      "name": "Player Two (NED)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NED",
+      "player_id": "player-ned-3",
+      "name": "Player Three (NED)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NOR",
+      "player_id": "player-nor-1",
+      "name": "Player One (NOR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NOR",
+      "player_id": "player-nor-2",
+      "name": "Player Two (NOR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NOR",
+      "player_id": "player-nor-3",
+      "name": "Player Three (NOR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NZL",
+      "player_id": "player-nzl-1",
+      "name": "Player One (NZL)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NZL",
+      "player_id": "player-nzl-2",
+      "name": "Player Two (NZL)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "NZL",
+      "player_id": "player-nzl-3",
+      "name": "Player Three (NZL)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "PAN",
+      "player_id": "player-pan-1",
+      "name": "Player One (PAN)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "PAN",
+      "player_id": "player-pan-2",
+      "name": "Player Two (PAN)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "PAN",
+      "player_id": "player-pan-3",
+      "name": "Player Three (PAN)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "PAR",
+      "player_id": "player-par-1",
+      "name": "Player One (PAR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "PAR",
+      "player_id": "player-par-2",
+      "name": "Player Two (PAR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "PAR",
+      "player_id": "player-par-3",
+      "name": "Player Three (PAR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "POR",
+      "player_id": "player-por-1",
+      "name": "Player One (POR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "POR",
+      "player_id": "player-por-2",
+      "name": "Player Two (POR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "POR",
+      "player_id": "player-por-3",
+      "name": "Player Three (POR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "QAT",
+      "player_id": "player-qat-1",
+      "name": "Player One (QAT)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "QAT",
+      "player_id": "player-qat-2",
+      "name": "Player Two (QAT)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "QAT",
+      "player_id": "player-qat-3",
+      "name": "Player Three (QAT)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "RSA",
+      "player_id": "player-rsa-1",
+      "name": "Player One (RSA)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "RSA",
+      "player_id": "player-rsa-2",
+      "name": "Player Two (RSA)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "RSA",
+      "player_id": "player-rsa-3",
+      "name": "Player Three (RSA)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SCO",
+      "player_id": "player-sco-1",
+      "name": "Player One (SCO)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SCO",
+      "player_id": "player-sco-2",
+      "name": "Player Two (SCO)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SCO",
+      "player_id": "player-sco-3",
+      "name": "Player Three (SCO)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SEN",
+      "player_id": "player-sen-1",
+      "name": "Player One (SEN)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SEN",
+      "player_id": "player-sen-2",
+      "name": "Player Two (SEN)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SEN",
+      "player_id": "player-sen-3",
+      "name": "Player Three (SEN)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SUI",
+      "player_id": "player-sui-1",
+      "name": "Player One (SUI)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SUI",
+      "player_id": "player-sui-2",
+      "name": "Player Two (SUI)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SUI",
+      "player_id": "player-sui-3",
+      "name": "Player Three (SUI)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SWE",
+      "player_id": "player-swe-1",
+      "name": "Player One (SWE)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SWE",
+      "player_id": "player-swe-2",
+      "name": "Player Two (SWE)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "SWE",
+      "player_id": "player-swe-3",
+      "name": "Player Three (SWE)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "TUN",
+      "player_id": "player-tun-1",
+      "name": "Player One (TUN)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "TUN",
+      "player_id": "player-tun-2",
+      "name": "Player Two (TUN)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "TUN",
+      "player_id": "player-tun-3",
+      "name": "Player Three (TUN)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "TUR",
+      "player_id": "player-tur-1",
+      "name": "Player One (TUR)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "TUR",
+      "player_id": "player-tur-2",
+      "name": "Player Two (TUR)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "TUR",
+      "player_id": "player-tur-3",
+      "name": "Player Three (TUR)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "URU",
+      "player_id": "player-uru-1",
+      "name": "Player One (URU)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "URU",
+      "player_id": "player-uru-2",
+      "name": "Player Two (URU)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "URU",
+      "player_id": "player-uru-3",
+      "name": "Player Three (URU)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "USA",
+      "player_id": "player-usa-1",
+      "name": "Christian Pulisic",
+      "position": "Forward",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "USA",
+      "player_id": "player-usa-2",
+      "name": "Weston McKennie",
+      "position": "Midfielder",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "USA",
+      "player_id": "player-usa-3",
+      "name": "Folarin Balogun",
+      "position": "Forward",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "UZB",
+      "player_id": "player-uzb-1",
+      "name": "Player One (UZB)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "UZB",
+      "player_id": "player-uzb-2",
+      "name": "Player Two (UZB)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "UZB",
+      "player_id": "player-uzb-3",
+      "name": "Player Three (UZB)",
+      "position": "Defender",
+      "age": 28
+    }
+  ],
+  "sample_quarantine_rows": [
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ALG",
+      "player_id": "player-alg-1",
+      "name": "Player One (ALG)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ALG",
+      "player_id": "player-alg-2",
+      "name": "Player Two (ALG)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ALG",
+      "player_id": "player-alg-3",
+      "name": "Player Three (ALG)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ARG",
+      "player_id": "player-arg-1",
+      "name": "Lionel Messi",
+      "position": "Forward",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ARG",
+      "player_id": "player-arg-2",
+      "name": "Alexis Mac Allister",
+      "position": "Midfielder",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "ARG",
+      "player_id": "player-arg-3",
+      "name": "Emiliano Martínez",
+      "position": "Goalkeeper",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUS",
+      "player_id": "player-aus-1",
+      "name": "Player One (AUS)",
+      "position": "Midfielder",
+      "age": 24
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUS",
+      "player_id": "player-aus-2",
+      "name": "Player Two (AUS)",
+      "position": "Forward",
+      "age": 26
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUS",
+      "player_id": "player-aus-3",
+      "name": "Player Three (AUS)",
+      "position": "Defender",
+      "age": 28
+    },
+    {
+      "league_id": "WORLD_CUP",
+      "team_code": "AUT",
+      "player_id": "player-aut-1",
+      "name": "Player One (AUT)",
+      "position": "Midfielder",
+      "age": 24
+    }
+  ]
+}

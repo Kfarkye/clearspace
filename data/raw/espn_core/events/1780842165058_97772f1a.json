@@ -1,0 +1,1 @@
+{"$ref":"http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/events/760415/competitions/760415/status?lang=en&region=us","clock":0.0,"addedClock":0.0,"displayClock":"0'","period":0,"type":{"id":"1","name":"STATUS_SCHEDULED","state":"pre","completed":false,"description":"Scheduled","detail":"Thu, June 11th at 3:00 PM EDT","shortDetail":"6/11 - 3:00 PM EDT"}}

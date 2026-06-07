@@ -1,0 +1,52 @@
+[
+  {
+    "espn_team_id": "164",
+    "espn_display_name": "Spain",
+    "espn_abbreviation": "ESP",
+    "spanner_team_code": "ESP",
+    "spanner_team_name": "Spain",
+    "match_basis": "manual_review_live_espn_name_match",
+    "confidence": "strong",
+    "approved_for_mapper": true
+  },
+  {
+    "espn_team_id": "202",
+    "espn_display_name": "Argentina",
+    "espn_abbreviation": "ARG",
+    "spanner_team_code": "ARG",
+    "spanner_team_name": "Argentina",
+    "match_basis": "manual_review_live_espn_name_match",
+    "confidence": "strong",
+    "approved_for_mapper": true
+  },
+  {
+    "espn_team_id": "203",
+    "espn_display_name": "Mexico",
+    "espn_abbreviation": "MEX",
+    "spanner_team_code": "MEX",
+    "spanner_team_name": "Mexico",
+    "match_basis": "manual_review_live_espn_name_match",
+    "confidence": "strong",
+    "approved_for_mapper": true
+  },
+  {
+    "espn_team_id": "205",
+    "espn_display_name": "Brazil",
+    "espn_abbreviation": "BRA",
+    "spanner_team_code": "BRA",
+    "spanner_team_name": "Brazil",
+    "match_basis": "manual_review_live_espn_name_match",
+    "confidence": "strong",
+    "approved_for_mapper": true
+  },
+  {
+    "espn_team_id": "206",
+    "espn_display_name": "Canada",
+    "espn_abbreviation": "CAN",
+    "spanner_team_code": "CAN",
+    "spanner_team_name": "Canada",
+    "match_basis": "manual_override",
+    "confidence": "exact",
+    "approved_for_mapper": true
+  }
+]

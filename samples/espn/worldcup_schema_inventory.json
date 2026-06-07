@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "probed_at": "2026-06-07T13:12:54.808Z",
+    "target": "fifa.world"
+  },
+  "schema_paths": {
+    "teams": {
+      "team_id": "sports[0].leagues[0].teams[].team.id",
+      "abbreviation": "sports[0].leagues[0].teams[].team.abbreviation",
+      "display_name": "sports[0].leagues[0].teams[].team.displayName",
+      "logo_url": "sports[0].leagues[0].teams[].team.logos[0].href",
+      "source_url": "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/teams"
+    },
+    "players": "PENDING_MANUAL_VERIFICATION_FROM_ROSTERS_JSONL",
+    "injuries": "PENDING_MANUAL_VERIFICATION_FROM_ROSTERS_OR_SUMMARIES",
+    "matches": {
+      "event_id": "events[].id",
+      "match_date": "events[].date",
+      "home_team": "events[].competitions[0].competitors[?(@.homeAway=='home')].team.id",
+      "away_team": "events[].competitions[0].competitors[?(@.homeAway=='away')].team.id",
+      "venue": "events[].competitions[0].venue.fullName",
+      "status": "events[].status.type.name",
+      "source_url": "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
+    },
+    "odds": {
+      "provider": "events[].competitions[0].odds[].provider.name",
+      "details": "events[].competitions[0].odds[].details",
+      "overUnder": "events[].competitions[0].odds[].overUnder",
+      "source_url": "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
+    }
+  }
+}

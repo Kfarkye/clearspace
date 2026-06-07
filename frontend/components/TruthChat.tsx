@@ -7,15 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChatInput } from './ChatInput';
 import { BettingAnglesArtifact } from './BettingAnglesArtifact';
 import { WorkspaceArtifact } from './WorkspaceArtifact';
-import { TravelHealthArtifact } from './TravelHealthArtifact';
 import { SidebarArtifact } from './SidebarArtifact';
-import { CodeSandboxArtifact } from './CodeSandboxArtifact';
 import { HtmlArtifact } from './HtmlArtifact';
 import { EmailViewerArtifact } from './EmailViewerArtifact';
 import { ScoreboardArtifact } from './ScoreboardArtifact';
 import { MLBScoreboard } from './MLBScoreboard';
 import { DataTableArtifact } from './DataTableArtifact';
-import { LicensingArtifact } from './LicensingArtifact';
 import { WorldCupArtifact } from './WorldCupArtifact';
 import { WorldCupGroupArtifact } from './WorldCupGroupArtifact';
 import { AuraYouTube } from './AuraYouTube';
@@ -262,12 +259,9 @@ function renderCodeSegment(
   if (isDiagnostic) return <DiagnosticArtifact key={key} dataString={code} onRecover={() => onSendMessage('Apply the proposed diagnostic patch.')} />;
   if (isBettingAngles) return <BettingAnglesArtifact key={key} dataString={code} />;
   if (isWorkspace) return <WorkspaceArtifact key={key} dataString={code} onEmailClick={(msgId, subject) => onSendMessage(`Open email "${subject}" (message_id: ${msgId})`)} />;
-  if (isTravelHealth) return <TravelHealthArtifact key={key} dataString={code} />;
   if (isSidebar) return <SidebarArtifact key={key} dataString={code} onAction={onSendMessage} />;
-  if (isCodeSandbox) return <CodeSandboxArtifact key={key} dataString={code} />;
   if (isEmailViewer) return <EmailViewerArtifact key={key} dataString={code} onReply={onSendMessage} />;
   if (isDataTable) return <DataTableArtifact key={key} dataString={code} />;
-  if (isLicensing) return <LicensingArtifact key={key} dataString={code} />;
   if (isWorldCupGroup) return <WorldCupGroupArtifact key={key} dataString={code} />;
   if (isWorldCup) return <WorldCupArtifact key={key} dataString={code} />;
 

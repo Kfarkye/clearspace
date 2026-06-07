@@ -1,0 +1,42 @@
+{
+  "mapping_required": false,
+  "mappings": {
+    "164": {
+      "team_code": "ESP",
+      "name": "Spain",
+      "espn_team_id": "164",
+      "match_basis": "manual_review_live_espn_name_match",
+      "confidence": "strong"
+    },
+    "202": {
+      "team_code": "ARG",
+      "name": "Argentina",
+      "espn_team_id": "202",
+      "match_basis": "manual_review_live_espn_name_match",
+      "confidence": "strong"
+    },
+    "203": {
+      "team_code": "MEX",
+      "name": "Mexico",
+      "espn_team_id": "203",
+      "match_basis": "manual_review_live_espn_name_match",
+      "confidence": "strong"
+    },
+    "205": {
+      "team_code": "BRA",
+      "name": "Brazil",
+      "espn_team_id": "205",
+      "match_basis": "manual_review_live_espn_name_match",
+      "confidence": "strong"
+    },
+    "206": {
+      "team_code": "CAN",
+      "name": "Canada",
+      "espn_team_id": "206",
+      "match_basis": "manual_override",
+      "confidence": "exact"
+    }
+  },
+  "unmapped_espn_teams": [],
+  "spanner_teams_inspected": 112
+}

@@ -1,0 +1,49 @@
+{
+  "mapped_row_counts": {
+    "teams": 0,
+    "players": 2,
+    "injury_news": 2,
+    "odds": 0,
+    "lineup_projections": 0,
+    "team_power_ratings": 0
+  },
+  "sample_mapped_rows": {
+    "players": {
+      "player_id": "196176",
+      "team_id": "164",
+      "league_id": "WORLD_CUP",
+      "full_name": "Christian Pulisic",
+      "position": "Midfielder",
+      "source": "espn_core",
+      "source_url": "http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/196176?lang=en&region=us",
+      "fetched_at": "2026-06-07T13:57:42.495Z",
+      "raw_payload": "{\"id\":\"196176\",\"fullName\":\"Christian Pulisic\",\"position\":{\"name\":\"Midfielder\"},\"team\":{\"$ref\":\"http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/teams/164?lang=en&region=us\"},\"$ref\":\"http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/196176?lang=en&region=us\"}"
+    },
+    "injury_news": {
+      "injury_id": "inj_196176",
+      "player_id": "196176",
+      "team_id": "164",
+      "league_id": "WORLD_CUP",
+      "status": "Questionable",
+      "details": "Hamstring strain",
+      "source": "espn_core",
+      "source_url": null,
+      "fetched_at": "2026-06-07T13:57:42.496Z",
+      "raw_payload": "{\"id\":\"inj_196176\",\"status\":\"Questionable\",\"details\":\"Hamstring strain\",\"athlete\":{\"$ref\":\"http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/196176?lang=en&region=us\"},\"team\":{\"$ref\":\"http://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/teams/164?lang=en&region=us\"}}"
+    }
+  },
+  "rejected_row_count": 0,
+  "rejected_row_reasons": {},
+  "missing_fields_summary": {},
+  "team_identity_join_results": {
+    "successful": 2,
+    "failed": 0
+  },
+  "authorization_recommendation": {
+    "players": "ALLOW",
+    "injury_news": "ALLOW",
+    "lineup_projections": "BLOCK",
+    "odds": "BLOCK",
+    "team_power_ratings": "BLOCK"
+  }
+}

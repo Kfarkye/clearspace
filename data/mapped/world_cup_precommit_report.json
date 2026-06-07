@@ -1,0 +1,45 @@
+{
+  "counts": {
+    "teams": 19,
+    "athletes": 0,
+    "injuries": 0,
+    "events": 26,
+    "odds": 0,
+    "lineups": 0,
+    "unmapped_entities": 246,
+    "rejected_rows": 291
+  },
+  "unmapped_analysis": {
+    "seasons": {
+      "count": 492,
+      "reason": "Payload type not supported by map-espn-world-cup-core-dry-run.ts mapper."
+    }
+  },
+  "source_coverage": {
+    "status": "FAIL",
+    "missing_fields": [
+      "Missing 'league_id' in events",
+      "Missing 'source' in events",
+      "Missing 'source_url' in events",
+      "Missing 'fetched_at' in events"
+    ]
+  },
+  "schema_alignment": {
+    "status": "FAIL",
+    "issues": [
+      "Actual Spanner schema definition is unknown to the script, but current dry_run payload lacks league_id, source, source_url, etc. as seen in source_coverage."
+    ]
+  },
+  "relational_joins": {
+    "status": "FAIL",
+    "issues": [
+      "Foreign key 'team_id' missing in events"
+    ]
+  },
+  "commit_script_inspection": {
+    "status": "FAIL",
+    "violations": [
+      "No chunked upserts detected"
+    ]
+  }
+}
