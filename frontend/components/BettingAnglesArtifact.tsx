@@ -389,7 +389,7 @@ export const BettingAnglesArtifact: React.FC<BettingAnglesProps> = ({ dataString
       </div>
 
       {/* ─── MOBILE LAYOUT ─── */}
-      <div className="md:hidden flex flex-col gap-4 w-full max-w-md mx-auto p-4 bg-ink min-h-screen pb-[env(safe-area-inset-bottom)]">
+      <div className="md:hidden flex flex-col gap-4 w-full max-w-md mx-auto p-4 bg-transparent min-h-screen pb-[env(safe-area-inset-bottom)]">
         {bets.map((item, idx) => {
           const compositeKey = `mobile-${item.sport}-${item.game}-${idx}`.replace(/\s+/g, '-');
           const formattedOdds = item.odds !== 0 ? (item.odds > 0 && Number.isInteger(item.odds) ? `+${item.odds}` : item.odds) : (item.market_price || '');

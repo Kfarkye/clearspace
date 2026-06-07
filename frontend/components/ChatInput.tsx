@@ -171,9 +171,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Glassmorphic Input Capsule with gradient focus border */}
+      {/* Glassmorphic Input Capsule */}
       <div 
-        className={`transition-all duration-500 ease-[0.16,1,0.3,1] rounded-2xl ${isFocused ? 'input-gradient-border' : ''}`}
+        className="transition-all duration-500 ease-[0.16,1,0.3,1] rounded-2xl"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -183,7 +183,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           isDragging 
             ? 'border-2 border-dashed border-bronze bg-bronze/5 shadow-glass-hover scale-[1.01]'
             : isFocused 
-              ? 'shadow-glass-hover border border-bronze/30 ring-4 ring-bronze/10' 
+              ? 'shadow-glass-hover border border-bronze/40 ring-4 ring-bronze/10' 
               : 'border border-clay/60 shadow-glass'
         }`}
       >
@@ -200,7 +200,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
         )}
 
-        <div className="flex items-start px-5 pt-4 pb-2 relative z-10">
+        <div className="flex items-start px-4 pt-4 pb-1 relative z-10">
           <textarea
             ref={textareaRef}
             value={input}
@@ -211,7 +211,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             placeholder="Message Truth…"
             rows={1}
             disabled={isLoading}
-            className="w-full bg-transparent border-0 resize-none focus:ring-0 focus:outline-none text-[16px] sm:text-[14px] text-ink placeholder-taupe/50 py-1 max-h-48 leading-relaxed font-sans no-scrollbar"
+            className="w-full bg-transparent border-0 resize-none focus:ring-0 focus:outline-none text-[16px] sm:text-[14.5px] text-ink placeholder-taupe/50 py-1 max-h-48 leading-relaxed font-sans no-scrollbar"
           />
         </div>
 

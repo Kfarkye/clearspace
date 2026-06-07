@@ -30,15 +30,15 @@ export const IOSBettingCard: React.FC<BettingAngleProps> = ({
       className="
         relative w-full text-left overflow-hidden
         p-5 flex flex-col gap-4
-        bg-charcoal/40 backdrop-blur-3xl
-        border border-white/10 rounded-[24px]
+        bg-white/60 backdrop-blur-3xl
+        border border-clay rounded-[24px]
         shadow-glass hover:shadow-glass-hover
         transition-all duration-300 ease-out
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-charcoal/20
       "
     >
       {/* SPATIAL RHYTHM: The Glare. Simulates light hitting a physical glass surface. */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none rounded-[24px]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent pointer-events-none rounded-[24px]" />
       
       {/* HIERARCHY 1: The Intent & The Price */}
       <div className="flex justify-between items-start w-full relative z-10">
@@ -46,7 +46,7 @@ export const IOSBettingCard: React.FC<BettingAngleProps> = ({
           <span className="font-mono text-taupe text-[10px] uppercase tracking-widest">
             {edgeSource || 'Market Edge'}
           </span>
-          <h3 className="font-sans text-sand text-xl font-medium tracking-tight leading-snug">
+          <h3 className="font-sans text-charcoal text-xl font-medium tracking-tight leading-snug">
             {title}
           </h3>
         </div>
@@ -56,7 +56,7 @@ export const IOSBettingCard: React.FC<BettingAngleProps> = ({
             {marketPrice ? (String(marketPrice).startsWith('+') || String(marketPrice).startsWith('-') ? marketPrice : `${marketPrice > 0 ? '+' : ''}${marketPrice}`) : 'N/A'}
           </span>
           {fairPrice && (
-            <span className="font-mono text-taupe/60 text-[10px] uppercase tracking-widest">
+            <span className="font-mono text-taupe text-[10px] uppercase tracking-widest">
               Fair: {fairPrice}
             </span>
           )}
@@ -64,16 +64,16 @@ export const IOSBettingCard: React.FC<BettingAngleProps> = ({
       </div>
 
       {/* HIERARCHY 2: The Context (Subtractive Design - only what matters) */}
-      <div className="relative z-10 pt-4 border-t border-white/5 flex flex-col gap-3">
+      <div className="relative z-10 pt-4 border-t border-clay/50 flex flex-col gap-3">
         <p className="font-sans text-taupe text-sm leading-relaxed">
           {whyNow}
         </p>
         
         {/* THE SWEAT: Graceful handling of risk flags with muted, yet distinct visual weight */}
         {riskFlag && (
-          <div className="flex items-start gap-2 p-3 bg-ink/50 rounded-xl border border-clay/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-clay mt-1.5 flex-shrink-0 animate-breathe" />
-            <p className="font-sans text-clay/90 text-xs leading-snug">
+          <div className="flex items-start gap-2 p-3 bg-sand/80 rounded-xl border border-clay">
+            <div className="w-1.5 h-1.5 rounded-full bg-charcoal/40 mt-1.5 flex-shrink-0 animate-breathe" />
+            <p className="font-sans text-charcoal/80 text-xs leading-snug">
               {riskFlag}
             </p>
           </div>

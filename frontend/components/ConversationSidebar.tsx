@@ -175,14 +175,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
-            className="fixed inset-y-0 left-0 w-[380px] bg-charcoal border-r border-white/5 shadow-glass z-50 flex flex-col font-sans overflow-hidden"
+            className="fixed inset-y-0 left-0 w-[380px] bg-sand border-r border-charcoal/10 shadow-glass z-50 flex flex-col font-sans overflow-hidden"
           >
             {/* Header */}
-            <header className="flex items-center justify-between px-6 py-5 border-b border-white/5 shrink-0">
-              <span className="text-sand font-medium tracking-tight">History</span>
+            <header className="flex items-center justify-between px-6 py-5 border-b border-charcoal/10 shrink-0">
+              <span className="text-charcoal font-medium tracking-tight">History</span>
               <button 
                 onClick={onClose}
-                className="text-taupe hover:text-sand text-xs font-mono uppercase tracking-widest transition-colors duration-200 focus:outline-none"
+                className="text-taupe hover:text-charcoal text-xs font-mono uppercase tracking-widest transition-colors duration-200 focus:outline-none"
               >
                 Close
               </button>
@@ -194,9 +194,9 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 <div className="px-6 flex flex-col gap-6 mt-2">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="flex flex-col gap-2">
-                      <div className="w-16 h-3 bg-white/5 rounded animate-pulse" />
-                      <div className="w-full h-4 bg-white/5 rounded animate-pulse" />
-                      <div className="w-3/4 h-4 bg-white/5 rounded animate-pulse" />
+                      <div className="w-16 h-3 bg-charcoal/5 rounded animate-pulse" />
+                      <div className="w-full h-4 bg-charcoal/5 rounded animate-pulse" />
+                      <div className="w-3/4 h-4 bg-charcoal/5 rounded animate-pulse" />
                     </div>
                   ))}
                 </div>
@@ -227,12 +227,12 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                               onClick={() => onSelectConversation(conv.conversationId)}
                               className={`group relative flex flex-col gap-1.5 px-6 py-3 cursor-pointer transition-all duration-200 ease-out ${
                                 isActive 
-                                  ? 'bg-white/5 border-l-[3px] border-sand' 
-                                  : 'border-l-[3px] border-transparent hover:bg-white/[0.02]'
+                                  ? 'bg-charcoal/5 border-l-[3px] border-charcoal' 
+                                  : 'border-l-[3px] border-transparent hover:bg-charcoal/[0.02]'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-4">
-                                <span className={`text-[12.5px] leading-snug truncate font-medium transition-colors duration-200 ${isActive ? 'text-sand' : 'text-sand/80 group-hover:text-sand'}`}>
+                                <span className={`text-[12.5px] leading-snug truncate font-medium transition-colors duration-200 ${isActive ? 'text-charcoal' : 'text-charcoal/70 group-hover:text-charcoal'}`}>
                                   {conv.title || 'Untitled'}
                                 </span>
                               </div>
@@ -247,14 +247,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                   <button
                                     onClick={(e) => handleExport(e, conv)}
                                     className={`text-[9px] font-mono uppercase tracking-wider transition-colors duration-200 focus:outline-none ${
-                                      copiedId === conv.conversationId ? 'text-emerald' : 'text-taupe hover:text-sand'
+                                      copiedId === conv.conversationId ? 'text-emerald' : 'text-taupe hover:text-charcoal'
                                     }`}
                                   >
                                     {copiedId === conv.conversationId ? 'Copied' : 'Copy'}
                                   </button>
                                   <button
                                     onClick={(e) => handleTogglePin(e, conv)}
-                                    className="text-[9px] font-mono uppercase tracking-wider text-taupe hover:text-sand transition-colors duration-200 focus:outline-none"
+                                    className="text-[9px] font-mono uppercase tracking-wider text-taupe hover:text-charcoal transition-colors duration-200 focus:outline-none"
                                   >
                                     {conv.isPinned ? 'Unpin' : 'Pin'}
                                   </button>
@@ -271,8 +271,8 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             </div>
 
             {/* Integrations Footer */}
-            <div className="shrink-0 border-t border-white/5 bg-[#1C1C1E] flex flex-col h-[40vh] overflow-y-auto no-scrollbar">
-              <div className="h-1/2 min-h-[200px] border-b border-white/5 overflow-y-auto no-scrollbar relative">
+            <div className="shrink-0 border-t border-charcoal/10 bg-[#FAFAFC] flex flex-col h-[40vh] overflow-y-auto no-scrollbar">
+              <div className="h-1/2 min-h-[200px] border-b border-charcoal/10 overflow-y-auto no-scrollbar relative">
                 <GitHubPanel 
                   isConnected={isGitHubConnected}
                   username={githubUser}

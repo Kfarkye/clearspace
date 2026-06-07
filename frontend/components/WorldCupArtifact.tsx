@@ -509,16 +509,16 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
             </div>
 
             {/* Premium Slate Chalkboard Soccer Pitch */}
-            <div className="relative w-full aspect-[1.35] bg-gradient-to-b from-[#1C201C] to-[#121412] rounded-[24px] border border-black/[0.9] p-5 flex flex-col justify-between overflow-hidden shadow-[inset_0_2px_15px_rgba(0,0,0,0.5),0_12px_36px_rgba(0,0,0,0.05)] select-none">
+            <div className="relative w-full aspect-[1.35] bg-gradient-to-b from-sand to-clay/20 rounded-[24px] border border-clay p-5 flex flex-col justify-between overflow-hidden shadow-glass-sm select-none">
               
               {/* Slate Grid Field Lines */}
-              <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.15)_0%,transparent_80%)]" />
+              <div className="absolute inset-0 opacity-[0.4] pointer-events-none bg-[radial-gradient(ellipse_at_center,rgba(26,26,24,0.05)_0%,transparent_80%)]" />
               
               {/* Field Markings */}
-              <div className="absolute inset-x-0 top-0 h-1/2 border-b border-white/[0.06] pointer-events-none" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border border-white/[0.05] pointer-events-none" />
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-44 h-20 border-x border-b border-white/[0.05] rounded-b-[18px] pointer-events-none" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-44 h-20 border-x border-t border-white/[0.05] rounded-t-[18px] pointer-events-none" />
+              <div className="absolute inset-x-0 top-0 h-1/2 border-b border-clay/50 pointer-events-none" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border border-clay/50 pointer-events-none" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-44 h-20 border-x border-b border-clay/50 rounded-b-[18px] pointer-events-none" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-44 h-20 border-x border-t border-clay/50 rounded-t-[18px] pointer-events-none" />
 
               {/* FW Row */}
               <div className="flex justify-around items-center w-full z-10 pt-3">
@@ -526,7 +526,7 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                   <div key={i} className="flex flex-col items-center">
                     <motion.div 
                       whileHover={{ scale: 1.08 }}
-                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white/[0.07] border border-white/20`}
+                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white border border-clay`}
                     >
                       {p.resolvedHeadshot ? (
                         <>
@@ -535,15 +535,15 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                             alt={p.resolvedName} 
                             className="w-full h-full object-cover rounded-full" 
                           />
-                          <div className="absolute -bottom-1 -right-1 bg-slate-900 text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-slate-500 text-white font-mono leading-none">
+                          <div className="absolute -bottom-1 -right-1 bg-alabaster text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-clay text-charcoal font-mono leading-none">
                             {p.resolvedNumber}
                           </div>
                         </>
                       ) : (
-                        <span className="text-white/95">{p.resolvedNumber}</span>
+                        <span className="text-charcoal">{p.resolvedNumber}</span>
                       )}
                     </motion.div>
-                    <span className="text-[9px] font-medium text-white/80 bg-[#1A1A18]/60 border border-white/[0.04] px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
+                    <span className="text-[9px] font-medium text-charcoal bg-white/80 backdrop-blur-md border border-clay shadow-sm px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
                   </div>
                 ))}
               </div>
@@ -554,7 +554,7 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                   <div key={i} className="flex flex-col items-center">
                     <motion.div 
                       whileHover={{ scale: 1.08 }}
-                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white/[0.07] border border-white/20`}
+                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white border border-clay`}
                     >
                       {p.resolvedHeadshot ? (
                         <>
@@ -563,15 +563,15 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                             alt={p.resolvedName} 
                             className="w-full h-full object-cover rounded-full" 
                           />
-                          <div className="absolute -bottom-1 -right-1 bg-slate-900 text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-slate-500 text-white font-mono leading-none">
+                          <div className="absolute -bottom-1 -right-1 bg-alabaster text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-clay text-charcoal font-mono leading-none">
                             {p.resolvedNumber}
                           </div>
                         </>
                       ) : (
-                        <span className="text-white/95">{p.resolvedNumber}</span>
+                        <span className="text-charcoal">{p.resolvedNumber}</span>
                       )}
                     </motion.div>
-                    <span className="text-[9px] font-medium text-white/80 bg-[#1A1A18]/60 border border-white/[0.04] px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
+                    <span className="text-[9px] font-medium text-charcoal bg-white/80 backdrop-blur-md border border-clay shadow-sm px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
                   </div>
                 ))}
               </div>
@@ -582,7 +582,7 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                   <div key={i} className="flex flex-col items-center">
                     <motion.div 
                       whileHover={{ scale: 1.08 }}
-                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white/[0.07] border border-white/20`}
+                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white border border-clay`}
                     >
                       {p.resolvedHeadshot ? (
                         <>
@@ -591,15 +591,15 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                             alt={p.resolvedName} 
                             className="w-full h-full object-cover rounded-full" 
                           />
-                          <div className="absolute -bottom-1 -right-1 bg-slate-900 text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-slate-500 text-white font-mono leading-none">
+                          <div className="absolute -bottom-1 -right-1 bg-alabaster text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-clay text-charcoal font-mono leading-none">
                             {p.resolvedNumber}
                           </div>
                         </>
                       ) : (
-                        <span className="text-white/95">{p.resolvedNumber}</span>
+                        <span className="text-charcoal">{p.resolvedNumber}</span>
                       )}
                     </motion.div>
-                    <span className="text-[9px] font-medium text-white/80 bg-[#1A1A18]/60 border border-white/[0.04] px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
+                    <span className="text-[9px] font-medium text-charcoal bg-white/80 backdrop-blur-md border border-clay shadow-sm px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
                   </div>
                 ))}
               </div>
@@ -610,7 +610,7 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                   <div key={i} className="flex flex-col items-center">
                     <motion.div 
                       whileHover={{ scale: 1.08 }}
-                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white/[0.07] border border-white/20`}
+                      className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-mono font-medium shadow-md bg-white border border-clay`}
                     >
                       {p.resolvedHeadshot ? (
                         <>
@@ -619,15 +619,15 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
                             alt={p.resolvedName} 
                             className="w-full h-full object-cover rounded-full" 
                           />
-                          <div className="absolute -bottom-1 -right-1 bg-slate-900 text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-slate-500 text-white font-mono leading-none">
+                          <div className="absolute -bottom-1 -right-1 bg-alabaster text-[8px] rounded-full w-4 h-4 flex items-center justify-center border border-clay text-charcoal font-mono leading-none">
                             {p.resolvedNumber}
                           </div>
                         </>
                       ) : (
-                        <span className="text-white/95">{p.resolvedNumber}</span>
+                        <span className="text-charcoal">{p.resolvedNumber}</span>
                       )}
                     </motion.div>
-                    <span className="text-[9px] font-medium text-white/80 bg-[#1A1A18]/60 border border-white/[0.04] px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
+                    <span className="text-[9px] font-medium text-charcoal bg-white/80 backdrop-blur-md border border-clay shadow-sm px-2.5 py-0.5 rounded-full mt-1.5 tracking-tight text-center max-w-[85px] truncate">{p.resolvedName.split(' ').pop()}</span>
                   </div>
                 ))}
               </div>
@@ -777,7 +777,7 @@ export const WorldCupArtifact: React.FC<{ dataString: string }> = ({ dataString 
             href={data.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1A1A18] text-white text-[12.5px] font-medium tracking-tight shadow-[0_4px_14px_rgba(26,26,24,0.1)] hover:bg-black transition-all duration-300 w-full sm:w-auto justify-center shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-charcoal text-white text-[12.5px] font-medium tracking-tight shadow-btn-primary hover:bg-ink transition-all duration-300 w-full sm:w-auto justify-center shrink-0"
           >
             Read Official Team Guide
             <ArrowUpRight size={13} strokeWidth={2} className="text-white/60" />
