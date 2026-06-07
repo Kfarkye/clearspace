@@ -189,6 +189,7 @@ export const espnScoreboard = async (req, res) => {
         teams,
         odds: finalOdds,
         predictor,
+        situation: comp.situation || null,
         // Leaders / top performers (if available from site API)
         leaders: (comp.leaders || []).map(cat => ({
           category: cat.name,
@@ -645,116 +646,6 @@ export const getMatches = async (req, res) => {
     res.json({ matches });
   } catch (e) {
     console.error(`[Sports:Matches:${req.params.league}] Error:`, e.message);
-    res.status(500).json({ error: e.message });
-  }
-};
-
-export const getSchedule = async (req, res) => {
-  try {
-    const league = req.params.league.toUpperCase();
-    const limit = parseInt(req.query.limit) || 5;
-
-    try {
-      const mapping = SHARED_ESPN_SPORT_MAP[league.toLowerCase()];
-      if (mapping) {
-        // Reuse the module-level espnCache. Key is distinct from espnScoreboard's
-        // so the two endpoints' differently-shaped payloads never collide.
-        const cacheKey = `schedule:${league}:today`;
-        const { data: cachedData, fromCache } = getCachedOrFetch(cacheKey);
-        if (fromCache) {
-          return res.json({ events: cachedData.events.slice(0, limit), _cached: true });
-        }
-
-        const siteUrl = `https://site.api.espn.com/apis/site/v2/sports/${mapping.site}/scoreboard`;
-        const siteRes = await fetch(siteUrl, { signal: AbortSignal.timeout(5000) });
-
-        if (siteRes.ok) {
-          const siteData = await siteRes.json();
-          const allEvents = (siteData.events || []).map(evt => {
-            const comp = evt.competitions?.[0] || {};
-            const competitors = comp.competitors || [];
-            const status = evt.status || {};
-
-            const homeRaw = competitors.find(c => c.homeAway === 'home') || competitors[0];
-            const awayRaw = competitors.find(c => c.homeAway === 'away') || competitors[1];
-
-            const parseTeam = (raw) => {
-              const parsedScore = parseInt(raw?.score, 10);
-              return {
-                name: raw?.team?.shortDisplayName || raw?.team?.name || 'Unknown',
-                abbreviation: raw?.team?.abbreviation || 'TBD',
-                record: raw?.records?.[0]?.summary || '0-0',
-                score: !isNaN(parsedScore) ? parsedScore : null,
-              };
-            };
-
-            const stateMap = {
-              'STATUS_SCHEDULED': 'pre',
-              'STATUS_IN_PROGRESS': 'in',
-              'STATUS_FINAL': 'post',
-              'STATUS_POSTPONED': 'off',
-              'STATUS_SUSPENDED': 'off',
-              'STATUS_CANCELED': 'off',
-              'STATUS_DELAYED': 'off',
-            };
-            const statusState = stateMap[status.type?.name] || 'pre';
-
-            const detail = status.type?.shortDetail || '';
-            const periodPrefix = detail.split(' ')[0].toLowerCase(); // top | bot | mid | end
-
-            // Board-scope live state only: inning, half, status. Bases/outs are NOT
-            // reliable here — they come from the focused view's /summary call.
-            let live = undefined;
-            if (statusState === 'in') {
-              live = {
-                inning: status.period,
-                inning_half: (periodPrefix === 'bot' || periodPrefix === 'end') ? 'bottom' : 'top',
-              };
-            }
-
-            const oddsRaw = comp.odds?.[0] || {};
-            let oddsObj = undefined;
-            if (oddsRaw.homeTeamOdds?.moneyLine || oddsRaw.awayTeamOdds?.moneyLine) {
-              oddsObj = {
-                homeMoneyline: oddsRaw.homeTeamOdds?.moneyLine || 0,
-                awayMoneyline: oddsRaw.awayTeamOdds?.moneyLine || 0,
-              };
-            }
-
-            return {
-              game_id: evt.id,
-              short_status: detail,
-              status_state: statusState,
-              start_time: evt.date,
-              home_team: parseTeam(homeRaw),
-              away_team: parseTeam(awayRaw),
-              live,
-              odds: oddsObj,
-            };
-          });
-
-          // Cache the full normalized set; slice per-request so different limits share one fetch.
-          setCache(cacheKey, { events: allEvents });
-          return res.json({ events: allEvents.slice(0, limit) });
-        }
-      }
-    } catch (err) {
-      console.warn('[getSchedule] Live ESPN scoreboard failed, falling back to DB:', err.message);
-    }
-
-    // DB fallback (unchanged)
-    const matches = await sportsDAL.getMatches(league, {});
-    const events = matches.slice(0, limit).map(m => ({
-      game_id: m.matchId,
-      short_status: m.status,
-      status_state: 'pre',
-      home_team: { name: m.homeTeam?.name || m.homeTeam?.code, abbreviation: m.homeTeam?.code, record: '' },
-      away_team: { name: m.awayTeam?.name || m.awayTeam?.code, abbreviation: m.awayTeam?.code, record: '' },
-    }));
-
-    res.json({ events });
-  } catch (e) {
-    console.error(`[Sports:Schedule:${req.params.league}] Error:`, e.message);
     res.status(500).json({ error: e.message });
   }
 };

@@ -319,7 +319,7 @@ const GameDisplay = memo(({ game, isHero, onAction }: { game: Game; isHero?: boo
           {game.leaders.map((p, i) => (
             <div key={i} className="flex items-center gap-2.5 shrink-0 pr-2">
               <div className="w-8 h-8 rounded-full bg-[#F5F5F7] border border-black/[0.04] overflow-hidden flex items-end justify-center shrink-0">
-                {p.headshotUrl ? <><img src={p.headshotUrl} alt={p.name} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} className="w-[90%] h-[90%] object-cover object-bottom" loading="lazy" /><User size={16} className="text-black/20 mb-1 hidden" /></> : <User size={16} className="text-black/20 mb-1" />}
+                {p.headshotUrl ? <img src={p.headshotUrl} alt={p.name} className="w-[90%] h-[90%] object-cover object-bottom" loading="lazy" /> : <User size={16} className="text-black/20 mb-1" />}
               </div>
               <div className="flex flex-col">
                 <span className="text-[11.5px] font-semibold text-[#1D1D1F] tracking-tight">{p.name}</span>
@@ -453,40 +453,39 @@ export const ScoreboardArtifact: React.FC<{ dataString: string; onAction?: (quer
 
     const fetchLiveUpdates = async () => {
       try {
-        const sportPath = ESPN_SPORT_MAP[league.toLowerCase()];
-        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${sportPath}/scoreboard`);
+        const proxyUrl = `/api-proxy/espn/${league.toLowerCase()}`;
+        const res = await fetch(proxyUrl, {
+          headers: {
+            'x-app-proxy': import.meta.env.VITE_PROXY_HEADER || ''
+          }
+        });
         if (!res.ok || cancelled) return;
         const json = await res.json();
 
         const updates: Record<string, Partial<Game>> = {};
         for (const ev of json.events || []) {
-          const comp = ev.competitions?.[0];
-          if (!comp) continue;
-
-          const state = comp.status?.type?.state;
-
           // Parse live situation from ESPN edge data
           let sit: LiveSituation | undefined;
-          if (comp.situation) {
+          if (ev.situation) {
             sit = {
-              downDistance: comp.situation.downDistanceText,
-              possession: comp.situation.possession ? String(comp.situation.possession) : undefined,
-              isRedZone: comp.situation.isRedZone,
-              outs: comp.situation.outs,
-              onFirst: !!comp.situation.onFirst,
-              onSecond: !!comp.situation.onSecond,
-              onThird: !!comp.situation.onThird,
-              lastPlay: comp.situation.lastPlay?.text,
-              balls: comp.situation.balls,
-              strikes: comp.situation.strikes,
+              downDistance: ev.situation.downDistanceText,
+              possession: ev.situation.possession ? String(ev.situation.possession) : undefined,
+              isRedZone: ev.situation.isRedZone,
+              outs: ev.situation.outs,
+              onFirst: !!ev.situation.onFirst,
+              onSecond: !!ev.situation.onSecond,
+              onThird: !!ev.situation.onThird,
+              lastPlay: ev.situation.lastPlay?.text,
+              balls: ev.situation.balls,
+              strikes: ev.situation.strikes,
             };
           }
 
           updates[String(ev.id)] = {
-            status: state === 'in' ? 'live' : state === 'post' ? 'final' : 'scheduled',
-            period: comp.status?.type?.shortDetail,
-            away_team: { score: comp.competitors?.find((c: any) => c.homeAway === 'away')?.score } as Team,
-            home_team: { score: comp.competitors?.find((c: any) => c.homeAway === 'home')?.score } as Team,
+            status: normalizeStatus(ev.status),
+            period: ev.detail || ev.period,
+            away_team: { score: ev.teams?.find((t: any) => t.homeAway === 'away')?.score } as Team,
+            home_team: { score: ev.teams?.find((t: any) => t.homeAway === 'home')?.score } as Team,
             situation: sit,
           } as Partial<Game>;
         }
