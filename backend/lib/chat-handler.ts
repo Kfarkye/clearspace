@@ -75,7 +75,8 @@ export function mountChatRoute(app) {
 
       // 1. Execute Intent via Headless Intelligence Service
       console.log(`[CHAT] Executing generateAsset for query: "${message}" (mode: ${mode})...`);
-      const generatedAssets = await generateAsset(message, history, abortController.signal, mode, workspaceToken || null);
+      const githubToken = req.cookies?.github_token || null;
+      const generatedAssets = await generateAsset(message, history, abortController.signal, mode, workspaceToken || null, githubToken);
       console.log(`[CHAT] generateAsset completed, returned ${generatedAssets.length} assets.`);
 
       if (abortController.signal.aborted) return;

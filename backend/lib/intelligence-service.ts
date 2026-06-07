@@ -12,6 +12,7 @@ import * as sportsDAL from './sports-dal.js';
 import { classify, getDispatch } from './router.js';
 import { DeepResearchEngine } from './deep-research-engine.js';
 import { handleReadEmails, handleReadEmailDetail, handleReadCalendar, handleSearchDrive } from './workspace-handler.js';
+import { handleGithubQuery } from './github-handler.js';
 
 // ── Configuration ─────────────────────────────────────────────────────────
 
@@ -201,6 +202,22 @@ const deepResearchToolDeclaration = {
     },
     required: ['topic', 'domain'],
   },
+};
+
+const githubToolDeclaration = {
+  name: 'query_github',
+  description: 'A tool for interacting with the user\'s GitHub account. Use this to read git commits, browse file trees, or read real-time code.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      action: { type: Type.STRING, description: 'The action to perform: list_repos, get_tree, get_commits, or read_file.' },
+      params: { 
+        type: Type.OBJECT, 
+        description: 'Parameters for the action. get_tree needs owner & repo. get_commits needs owner, repo, and optional limit. read_file needs owner, repo, and path.'
+      }
+    },
+    required: ['action']
+  }
 };
 
 const spannerMlbGamesTool = {
@@ -764,7 +781,7 @@ class ResilientNetworkClient {
   }
 }
 
-export async function generateAsset(message, history = [], signal = null, chatMode = 'operator', workspaceToken = null) {
+export async function generateAsset(message, history = [], signal = null, chatMode = 'operator', workspaceToken = null, githubToken = null) {
   const ai = getAiClient();
 
   const contents = [
@@ -795,6 +812,12 @@ export async function generateAsset(message, history = [], signal = null, chatMo
   if (classification.mode === 'workspace' && workspaceToken) {
     tools.unshift({
       functionDeclarations: [workspaceTool]
+    });
+  }
+
+  if (githubToken) {
+    tools.unshift({
+      functionDeclarations: [githubToolDeclaration]
     });
   }
 
@@ -894,6 +917,17 @@ export async function generateAsset(message, history = [], signal = null, chatMo
             case 'generate_data_table': {
               const data = await fetchDataTable(call.args?.query);
               return buildAsset('DATA_TABLE', data.title || 'Data Table', data, 'system', sources);
+            }
+            case 'query_workspace': {
+              if (!workspaceToken) return buildAsset('WORKSPACE_DOC', 'Workspace Not Connected', { text: 'Please connect your Google Workspace account in Settings to use this feature.' }, 'system', sources);
+              const workspaceResult = await handleWorkspaceQuery(call.args, workspaceToken);
+              
+              const textOutput = typeof workspaceResult === 'string' ? workspaceResult : JSON.stringify(workspaceResult, null, 2);
+              return buildAsset('WORKSPACE_DOC', 'Workspace Data', { text: textOutput }, 'system', sources);
+            }
+            case 'query_github': {
+              const data = await handleGithubQuery(call.args.action, call.args.params || {}, githubToken);
+              return buildAsset('GITHUB_DATA', `GitHub Data: ${call.args.action}`, data, 'system', sources);
             }
             case 'get_mlb_core_ledger': {
               const { eventId } = call.args || {};
