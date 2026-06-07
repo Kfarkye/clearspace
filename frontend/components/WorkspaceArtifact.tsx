@@ -78,7 +78,7 @@ export const WorkspaceArtifact: React.FC<WorkspaceArtifactProps> = ({ dataString
   return (
     <motion.div 
       initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={SPRING_TRANSITION}
-      className="my-8 w-full bg-white/70 backdrop-blur-3xl rounded-[32px] shadow-[0_24px_60px_rgba(0,0,0,0.06),0_0_1px_rgba(0,0,0,0.1)] border border-black/[0.04] overflow-hidden font-sans isolate selection:bg-[#0066CC]/15"
+      className="my-8 w-full bg-white rounded-[32px] shadow-sm border border-charcoal/10 overflow-hidden font-sans isolate selection:bg-[#0066CC]/15"
     >
       {/* Fluid Spatial Header */}
       <div className="px-8 py-6 bg-white/40 flex items-center justify-between border-b border-black/[0.03]">
@@ -134,7 +134,7 @@ export const WorkspaceArtifact: React.FC<WorkspaceArtifactProps> = ({ dataString
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                          {email.is_urgent && <span className="w-2 h-2 rounded-full bg-[#FF3B30] shadow-[0_0_8px_rgba(255,59,48,0.4)]" />}
+                          {email.is_urgent && <span className="w-2 h-2 rounded-full bg-[#FF3B30]" />}
                           <span className="text-[13.5px] font-semibold text-[#1D1D1F] tracking-tight truncate max-w-[140px]">{email.sender}</span>
                         </div>
                         <span className="text-[11px] text-black/40 font-medium tracking-wide flex-shrink-0">{email.time}</span>
@@ -166,7 +166,7 @@ export const WorkspaceArtifact: React.FC<WorkspaceArtifactProps> = ({ dataString
                   {schedule.map((event: any, idx: number) => (
                     <div key={idx} className="relative pl-8 flex items-start gap-4">
                       {/* Timeline Dot */}
-                      <div className={`absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full border-[2.5px] bg-white z-10 ${event.is_next ? 'border-[#34C759] shadow-[0_0_12px_rgba(52,199,89,0.4)]' : 'border-black/20'}`} />
+                      <div className={`absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full border-[2.5px] bg-white z-10 ${event.is_next ? 'border-[#34C759]' : 'border-black/20'}`} />
                       
                       <div className="flex-1 -mt-1">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1.5">

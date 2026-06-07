@@ -213,7 +213,7 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
       initial={{ opacity: 0, y: 16 }} 
       animate={{ opacity: 1, y: 0 }} 
       transition={SPRING_TRANSITION}
-      className="my-8 w-full bg-white/70 backdrop-blur-3xl rounded-[32px] shadow-[0_24px_60px_rgba(0,0,0,0.06),0_0_1px_rgba(0,0,0,0.1)] border border-black/[0.04] overflow-hidden isolate font-sans selection:bg-[#007AFF]/15"
+      className="my-8 w-full bg-white rounded-[32px] shadow-sm border border-charcoal/10 overflow-hidden isolate font-sans selection:bg-[#007AFF]/15"
     >
       {/* Header */}
       <div className="px-8 pt-7 pb-5 bg-white/40">
@@ -241,7 +241,7 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
         {/* Sender Row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F5F5F7] to-[#E5E5EA] border border-black/[0.04] shadow-[inset_0_-1px_1px_rgba(0,0,0,0.04)] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full bg-alabaster border border-charcoal/10 shadow-sm flex items-center justify-center shrink-0">
               <span className="text-[15px] font-semibold text-[#1D1D1F]/70 tracking-tight">
                 {sender.name.charAt(0).toUpperCase()}
               </span>
@@ -304,7 +304,7 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
       </div>
 
       {/* Divider */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-black/[0.06] to-transparent" />
+      <div className="h-px w-full bg-charcoal/10" />
 
       {/* Body */}
       <div className="relative w-full bg-white/50 backdrop-blur-md min-h-[100px]">
@@ -333,7 +333,7 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
               {data.attachments!.map((att, i) => (
                 <div
                   key={i}
-                  className="group flex items-center gap-3 px-3.5 py-2.5 bg-white border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.02)] rounded-[12px] hover:border-black/[0.08] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] transition-all duration-300 cursor-default"
+                  className="group flex items-center gap-3 px-3.5 py-2.5 bg-white border border-charcoal/10 shadow-sm rounded-[12px] hover:border-charcoal/20 transition-all duration-300 cursor-default"
                 >
                   <span className="text-[12.5px] font-medium text-[#1D1D1F]/80 truncate max-w-[200px] tracking-tight">{att.filename}</span>
                   <span className="text-[11px] font-medium text-black/30 shrink-0 uppercase tracking-wider">{formatSize(att.size)}</span>
@@ -364,7 +364,7 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => onReply(`Reply to this email`)}
-              className="px-4 py-1.5 rounded-full bg-white border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[12px] font-semibold text-[#1D1D1F]/70 tracking-tight hover:text-[#1D1D1F] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 active:scale-95"
+              className="px-4 py-1.5 rounded-full bg-white border border-charcoal/10 shadow-sm text-[12px] font-semibold text-charcoal tracking-tight hover:bg-alabaster transition-all duration-300 active:scale-95"
             >
               Reply
             </motion.button>
@@ -372,7 +372,7 @@ export const EmailViewerArtifact: React.FC<EmailViewerArtifactProps> = ({ dataSt
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-black/[0.04] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-[12px] font-semibold text-[#1D1D1F]/70 tracking-tight hover:text-[#1D1D1F] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 active:scale-95 w-[84px] justify-center"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-charcoal/10 shadow-sm text-[12px] font-semibold text-charcoal tracking-tight hover:bg-alabaster transition-all duration-300 active:scale-95 w-[84px] justify-center"
           >
             {copied ? <Check size={12} className="text-[#34C759] shrink-0" strokeWidth={2.5} /> : <Copy size={12} className="shrink-0" strokeWidth={2} />}
             {copied ? 'Copied' : 'Copy'}

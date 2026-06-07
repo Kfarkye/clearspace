@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "generated_at": "2026-06-07T17:04:38.425Z",
+    "target_table": "injury_news",
+    "league_id": "WORLD_CUP"
+  },
+  "counts": {
+    "total_payloads_scanned": 291,
+    "potential_injuries_found": 0,
+    "injuries_mapped": 0,
+    "injuries_rejected": 0
+  },
+  "rejections": []
+}
