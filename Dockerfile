@@ -5,7 +5,7 @@ WORKDIR /app
 # Copy package files for all workspaces
 COPY package.json package-lock.json ./
 COPY frontend/package.json frontend/
-COPY backend/package.json backend/
+COPY backend-vertex/package.json backend-vertex/
 COPY shared/sports-core/package.json shared/sports-core/
 COPY shared/auth/package.json shared/auth/
 
@@ -29,7 +29,7 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 COPY frontend/package.json frontend/
-COPY backend/package.json backend/
+COPY backend-vertex/package.json backend-vertex/
 COPY shared/sports-core/package.json shared/sports-core/
 COPY shared/auth/package.json shared/auth/
 
@@ -37,7 +37,7 @@ COPY shared/auth/package.json shared/auth/
 RUN npm ci --omit=dev
 
 # Copy backend + shared source
-COPY backend/ backend/
+COPY backend-vertex/ backend-vertex/
 COPY shared/ shared/
 
 # Copy built frontend from build stage
@@ -48,4 +48,4 @@ ENV NODE_ENV=production
 
 EXPOSE 8080
 
-CMD ["npx", "tsx", "backend/server.js"]
+CMD ["npx", "tsx", "backend-vertex/server.js"]

@@ -2,16 +2,16 @@
   "name": "truth",
   "workspaces": [
     "frontend",
-    "backend",
+    "backend-vertex",
     "shared/sports-core",
     "shared/auth"
   ],
   "scripts": {
     "dev-frontend": "npm run dev --prefix frontend",
-    "dev-backend": "npm run dev --prefix backend",
+    "dev-backend": "npm run dev --prefix backend-vertex",
     "dev": "concurrently \"npm run dev-frontend\" \"npm run dev-backend\"",
     "build": "npm run build --prefix frontend",
-    "start": "node backend/server.js"
+    "start": "node backend-vertex/server.js"
   },
   "devDependencies": {
     "@rollup/wasm-node": "^4.61.0",
