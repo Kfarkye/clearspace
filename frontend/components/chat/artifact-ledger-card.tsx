@@ -37,10 +37,10 @@ export const ArtifactLedgerCard: React.FC<ArtifactLedgerCardProps> = ({ artifact
   if (hasError) return null;
 
   return (
-    <div className="w-full bg-charcoal border border-white/5 shadow-glass p-4 my-4 flex flex-col gap-3">
+    <div className="w-full bg-[#18181b] border border-white/10 shadow-lg rounded-xl p-4 my-4 flex flex-col gap-3">
       {/* Header: Metadata & Status */}
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
-        <span className="font-mono text-xs text-taupe uppercase tracking-widest">
+        <span className="font-mono text-xs text-slate-400 uppercase tracking-widest">
           Asset Ledger // {artifactId}
         </span>
         {isLoading && (
@@ -53,9 +53,9 @@ export const ArtifactLedgerCard: React.FC<ArtifactLedgerCardProps> = ({ artifact
       </div>
       
       {/* Content: Hydrated Payload */}
-      <div className="relative w-full overflow-hidden">
+      <div className="relative w-full overflow-hidden rounded-lg border border-white/5 bg-[#0a0a0a]">
         {isLoading ? (
-          <div className="w-full h-32 bg-clay/10 animate-shimmer" />
+          <div className="w-full h-32 bg-white/5 animate-shimmer" />
         ) : type === 'html' ? (
           <iframe 
             srcDoc={`
@@ -73,12 +73,12 @@ export const ArtifactLedgerCard: React.FC<ArtifactLedgerCardProps> = ({ artifact
               </script>
               ${content || ''}
             `} 
-            className="w-full h-96 border-none bg-ink shadow-inset"
+            className="w-full h-96 border-none bg-white"
             sandbox="allow-scripts allow-same-origin allow-popups"
             title={`Artifact ${artifactId}`}
           />
         ) : (
-          <pre className="font-mono text-sm text-sand bg-ink p-4 overflow-x-auto shadow-inset">
+          <pre className="font-mono text-sm text-slate-200 p-4 overflow-x-auto">
             <code>{content}</code>
           </pre>
         )}

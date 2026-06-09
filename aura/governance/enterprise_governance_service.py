@@ -112,8 +112,19 @@ class EnterpriseGovernanceService:
         Internal method to record an immutable audit event to the designated audit log stream.
         This is critical for regulatory compliance and forensic analysis.
         """
-        self.audit_log_stream.append({
+        log_entry = {
             "timestamp_utc": datetime.utcnow().isoformat(),
             "event_type": event_type,
             "details": details
-        })
+        }
+        self.audit_log_stream.append(log_entry)
+        
+        # Persistent audit logging mechanism
+        try:
+            import os
+            log_dir = os.path.dirname(os.path.abspath(__file__))
+            log_path = os.path.join(log_dir, "..", "..", "aura_audit_logs.jsonl")
+            with open(log_path, "a") as f:
+                f.write(json.dumps(log_entry) + "\n")
+        except Exception as e:
+            print(f"Failed to write persistent audit log: {e}")

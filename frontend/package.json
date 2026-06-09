@@ -9,19 +9,24 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.200",
     "@google/genai": "latest",
+    "@phosphor-icons/react": "^2.1.10",
     "@react-oauth/google": "^0.13.5",
+    "ai": "^6.0.198",
     "dompurify": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
     "marked": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.17.0",
-    "recharts": "latest",
+    "remark-gfm": "^4.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.20",
     "@types/node": "latest",
     "@vitejs/plugin-react": "^4",
     "autoprefixer": "^10.5.0",

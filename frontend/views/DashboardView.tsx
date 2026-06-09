@@ -24,6 +24,7 @@ const DashboardView: React.FC = () => {
     loadConversation,
     conversationId,
     executionPhase,
+    handleStop,
     isGitHubConnected,
     githubUser,
     handleConnectGitHub,
@@ -42,6 +43,7 @@ const DashboardView: React.FC = () => {
         workspaceToken={workspaceToken}
         onRetrySave={retryFailedSaves}
         executionPhase={executionPhase}
+        onStop={handleStop}
       />
       
       <ConversationSidebar

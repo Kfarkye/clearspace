@@ -48,25 +48,25 @@ const SettingsView: React.FC = () => {
 
         <div className="space-y-3">
           {/* Google Workspace */}
-          <div className="rounded-2xl bg-white/60 backdrop-blur-xl border border-white/50 overflow-hidden">
+          <div className="rounded-2xl bg-transparent border border-white/10 overflow-hidden">
             <div className="px-6 py-5 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                <div className="w-10 h-10 rounded-xl bg-[#111113] border border-white/10 flex items-center justify-center">
                   <GoogleLogo size={22} />
                 </div>
                 <div>
-                  <p className="text-[15px] font-medium text-charcoal tracking-tight">Google Workspace</p>
-                  <p className="text-[12px] text-taupe mt-0.5">
+                  <p className="text-[15px] font-medium text-slate-200 tracking-tight">Google Workspace</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">
                     {isWorkspaceConnected ? 'Gmail, Calendar, Drive, Docs, Sheets' : 'Connect your Google account'}
                   </p>
                 </div>
               </div>
               {isWorkspaceConnected ? (
-                <span className="text-[11px] font-mono text-taupe/40 tracking-wide">Connected</span>
+                <span className="text-[11px] font-mono text-emerald-400/80 tracking-wide">Connected</span>
               ) : (
                 <button
                   onClick={handleConnectWorkspace}
-                  className="px-5 py-2 rounded-xl text-[12px] font-medium bg-charcoal text-alabaster hover:bg-ink transition-all duration-200 active:scale-[0.97]"
+                  className="px-5 py-2 rounded-xl text-[12px] font-medium bg-white text-black hover:bg-slate-200 transition-all duration-200 active:scale-[0.97]"
                 >
                   Connect
                 </button>
@@ -75,15 +75,15 @@ const SettingsView: React.FC = () => {
           </div>
 
           {/* GitHub */}
-          <div className="rounded-2xl bg-white/60 backdrop-blur-xl border border-white/50 overflow-hidden">
+          <div className="rounded-2xl bg-transparent border border-white/10 overflow-hidden">
             <div className="px-6 py-5 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] text-[#24292f]">
+                <div className="w-10 h-10 rounded-xl bg-[#111113] border border-white/10 flex items-center justify-center text-slate-200">
                   <GitHubLogo size={22} />
                 </div>
                 <div>
-                  <p className="text-[15px] font-medium text-charcoal tracking-tight">GitHub</p>
-                  <p className="text-[12px] text-taupe mt-0.5">
+                  <p className="text-[15px] font-medium text-slate-200 tracking-tight">GitHub</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">
                     {isGitHubConnected ? `@${githubUser}` : 'Connect your repositories'}
                   </p>
                 </div>
@@ -91,14 +91,14 @@ const SettingsView: React.FC = () => {
               {isGitHubConnected ? (
                 <button
                   onClick={handleDisconnectGitHub}
-                  className="text-[11px] font-mono text-taupe/40 hover:text-red-400 transition-colors tracking-wide"
+                  className="text-[11px] font-mono text-slate-500 hover:text-red-400 transition-colors tracking-wide"
                 >
                   Disconnect
                 </button>
               ) : (
                 <button
                   onClick={handleConnectGitHub}
-                  className="px-5 py-2 rounded-xl text-[12px] font-medium bg-[#24292f] text-white hover:bg-[#1b1f23] transition-all duration-200 active:scale-[0.97]"
+                  className="px-5 py-2 rounded-xl text-[12px] font-medium bg-white text-black hover:bg-slate-200 transition-all duration-200 active:scale-[0.97]"
                 >
                   Connect
                 </button>
@@ -107,15 +107,15 @@ const SettingsView: React.FC = () => {
           </div>
 
           {/* Kalshi */}
-          <div className="rounded-2xl bg-white/60 backdrop-blur-xl border border-white/50 overflow-hidden">
+          <div className="rounded-2xl bg-transparent border border-white/10 overflow-hidden">
             <div className="px-6 py-5 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                <div className="w-10 h-10 rounded-xl bg-[#111113] border border-white/10 flex items-center justify-center">
                   <KalshiLogo size={24} />
                 </div>
                 <div>
-                  <p className="text-[15px] font-medium text-charcoal tracking-tight">Kalshi</p>
-                  <p className="text-[12px] text-taupe mt-0.5">Event contracts and prediction markets</p>
+                  <p className="text-[15px] font-medium text-slate-200 tracking-tight">Kalshi</p>
+                  <p className="text-[12px] text-slate-400 mt-0.5">Event contracts and prediction markets</p>
                 </div>
               </div>
               <button

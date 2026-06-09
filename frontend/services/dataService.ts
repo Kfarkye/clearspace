@@ -165,3 +165,23 @@ export async function isAuthenticated(): Promise<boolean> {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Spanner Asset Ledger
+// ---------------------------------------------------------------------------
+
+import type { SpannerAsset } from '../types/persistence';
+
+/** Lists full artifacts from the Spanner Asset Ledger. */
+export async function listAssets(limit: number = 50): Promise<SpannerAsset[]> {
+  const res = await fetch(`/api/assets?limit=${limit}`, {
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('AUTH_REQUIRED');
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}

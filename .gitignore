@@ -9,3 +9,7 @@ coverage/
 
 backend/compiler/venv/
 backend/database.sqlite
+data/
+aura_audit_logs.jsonl
+data/
+aura_audit_logs.jsonl

@@ -52,9 +52,9 @@ const AuraYouTubeWrapper: React.FC<{ dataString: string }> = ({ dataString }) =>
     }
   } catch (e) {
     return (
-      <div className="w-full bg-[#18181A] border border-[#C45C5C]/50 p-4 flex flex-col gap-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] rounded-2xl">
-        <span className="font-mono text-xs text-[#C45C5C] uppercase tracking-widest">Render Fault</span>
-        <span className="font-sans text-sm text-taupe">Failed to load media.</span>
+      <div className="w-full bg-red-50 border border-red-100 p-4 flex flex-col gap-2 rounded-2xl">
+        <span className="font-mono text-xs text-red-600 uppercase tracking-widest">Render Fault</span>
+        <span className="font-sans text-sm text-red-500">Failed to load media.</span>
       </div>
     );
   }
@@ -100,18 +100,18 @@ const CodeBlock = memo(({ lang, content }: { lang: string; content: string }) =>
   }, [content]);
 
   return (
-    <div className="relative group my-8 rounded-[24px] overflow-hidden bg-[#18181A] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_8px_20px_rgba(0,0,0,0.12)] border border-black/20 font-sans selection:bg-white/20">
-      <div className="flex items-center justify-between px-5 py-3 bg-white/[0.03] backdrop-blur-md">
-        <span className="text-[10px] font-mono text-white/50 uppercase tracking-[0.15em] font-medium">{lang || 'text'}</span>
-        <button onClick={handleCopy} className="text-white/40 hover:text-white transition-colors duration-300 active:scale-90" aria-label="Copy">
-          {copied ? <Check size={14} className="text-[#34C759]" /> : <Copy size={14} />}
+    <div className="relative group my-8 rounded-[24px] overflow-hidden bg-alabaster shadow-sm border border-charcoal/10 font-sans selection:bg-black/10">
+      <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-charcoal/10">
+        <span className="text-[10px] font-mono text-black/40 uppercase tracking-[0.15em] font-medium">{lang || 'text'}</span>
+        <button onClick={handleCopy} className="text-black/40 hover:text-black transition-colors duration-300 active:scale-90" aria-label="Copy">
+          {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
         </button>
       </div>
       <div className={`relative transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${!isExpanded && isTruncatable ? 'max-h-[280px] overflow-hidden' : 'max-h-none overflow-x-auto no-scrollbar'}`}>
-        <pre className="p-5 pt-3 font-mono text-[13px] text-[#E0E0E0] leading-[1.65] tracking-tight"><code>{content}</code></pre>
+        <pre className="p-5 pt-3 font-mono text-[13px] text-charcoal leading-[1.65] tracking-tight"><code>{content}</code></pre>
         {!isExpanded && isTruncatable && (
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#18181A] to-transparent pointer-events-none flex items-end justify-center pb-4">
-            <button onClick={() => setIsExpanded(true)} className="pointer-events-auto px-5 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur-md text-[11px] font-medium tracking-wide text-white transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm">
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-alabaster to-transparent pointer-events-none flex items-end justify-center pb-4">
+            <button onClick={() => setIsExpanded(true)} className="pointer-events-auto px-5 py-2 rounded-full bg-white border border-charcoal/10 hover:bg-alabaster text-[11px] font-medium tracking-wide text-charcoal transition-all duration-300 hover:scale-105 active:scale-95 shadow-sm">
               Reveal Code
             </button>
           </div>

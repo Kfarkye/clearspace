@@ -1,15 +1,9 @@
-import * as spannerDAL from './backend/services/db.js';
-async function run() {
-  try {
-    await spannerDAL.ensureUser({userId: "test-user"});
-    await spannerDAL.createConversation("test-user", "operator", "test");
-    const convs = await spannerDAL.getConversations("test-user");
-    await spannerDAL.appendMessage("test-user", convs[0].conversationId, {role: "user", content: "test"});
-    console.log("Success!");
-  } catch(e) {
-    console.error("Error:", e);
-  } finally {
-    await spannerDAL.closeSpanner();
-  }
+import { Spanner } from '@google-cloud/spanner';
+const spanner = new Spanner({ projectId: 'gen-lang-client-0281999829' });
+const instance = spanner.instance('clearspace');
+const db = instance.database('clearspace-db');
+async function test() {
+  const [rows] = await db.run("SELECT column_name FROM information_schema.columns WHERE table_name = 'MlbOddsHistory'");
+  console.log(rows.map(r => r.toJSON().column_name));
 }
-run();
+test().catch(console.error);

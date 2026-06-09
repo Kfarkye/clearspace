@@ -57,3 +57,46 @@ export interface ArtifactPayload {
   url?: string;
   metadata?: Record<string, unknown>;
 }
+
+/** 
+ * Advanced Asset Ledger (Spanner) Representation. 
+ * Mirrored from backend/lib/assets/assetSchema.ts 
+ */
+export interface AssetSource {
+  sourceId: string;
+  sourceType: string;
+  title?: string;
+  url?: string;
+  publisher?: string;
+  accessedAt: string;
+}
+
+export interface AssetRender {
+  renderId: string;
+  renderType: string;
+  status: string;
+  url?: string;
+}
+
+export interface SpannerAsset {
+  assetId: string;
+  type: string;
+  status: string;
+  title: string;
+  summary?: string;
+  ownerUserId?: string;
+  sourceSessionId?: string;
+  schemaVersion: string;
+  payloadHash: string;
+  payload: {
+    html?: string;
+    text?: string;
+    [key: string]: any;
+  };
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  expiresAt?: string;
+  sources?: AssetSource[];
+  renders?: AssetRender[];
+}

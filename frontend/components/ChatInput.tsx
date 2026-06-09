@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Image, X, CornerDownLeft, ChevronDown, Check } from 'lucide-react';
+import { ArrowUp, Mic, Image, X, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThinkingMode } from '../hooks/useChat';
 
@@ -17,10 +17,8 @@ interface ChatInputProps {
 }
 
 const THINKING_OPTIONS: { key: ThinkingMode; label: string; description: string }[] = [
-  { key: 'fast', label: 'Fast', description: 'No reasoning, fastest responses' },
-  { key: 'balanced', label: 'Normal', description: 'Moderate reasoning depth' },
-  { key: 'deep', label: 'Deep Think', description: 'Maximum reasoning for complex analysis' },
-  { key: 'web', label: 'Web', description: 'Google Search grounded, no tools' },
+  { key: 'normal', label: 'Normal', description: 'Fast, web-grounded chat' },
+  { key: 'deep', label: 'Deep Think', description: 'Heavy analytical processing' },
 ];
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -46,11 +44,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   }, [input]);
 
-  // Close thinking menu on click outside
+  // Close menus on click outside
   useEffect(() => {
-    if (!isThinkingMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (thinkingMenuRef.current && !thinkingMenuRef.current.contains(e.target as Node)) {
+      if (isThinkingMenuOpen && thinkingMenuRef.current && !thinkingMenuRef.current.contains(e.target as Node)) {
         setIsThinkingMenuOpen(false);
       }
     };
@@ -142,7 +139,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const activeLabel = THINKING_OPTIONS.find(o => o.key === thinkingMode)?.label || 'Fast';
+  const activeLabel = THINKING_OPTIONS.find(o => o.key === thinkingMode)?.label || 'Normal';
   const hasContent = input.trim().length > 0 || !!selectedImage;
 
   return (
@@ -179,12 +176,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         onDrop={handleDrop}
       >
       <div 
-        className={`relative flex flex-col bg-white rounded-2xl transition-all duration-500 ease-[0.16,1,0.3,1] overflow-visible ${
+        className={`relative flex flex-col bg-[#050505] rounded-[24px] transition-all duration-500 ease-[0.16,1,0.3,1] overflow-visible ${
           isDragging 
-            ? 'border-2 border-dashed border-bronze bg-bronze/5 shadow-glass-hover scale-[1.01]'
+            ? 'border-2 border-dashed border-emerald-500/50 bg-emerald-500/5 scale-[1.01]'
             : isFocused 
-              ? 'shadow-glass-hover border border-bronze/40 ring-4 ring-bronze/10' 
-              : 'border border-clay/60 shadow-glass'
+              ? 'border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]' 
+              : 'border border-white/10 shadow-lg'
         }`}
       >
         {/* Subtle inner shadow for depth */}
@@ -208,10 +205,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Message Truth…"
+            placeholder="Message AURA..."
             rows={1}
             disabled={isLoading}
-            className="w-full bg-transparent border-0 resize-none focus:ring-0 focus:outline-none text-[16px] sm:text-[14.5px] text-ink placeholder-taupe/50 py-1 max-h-48 leading-relaxed font-sans no-scrollbar"
+            className="w-full bg-transparent border-0 resize-none focus:ring-0 focus:outline-none text-[15px] sm:text-[14.5px] text-white placeholder-zinc-500 py-1.5 max-h-48 leading-relaxed font-sans no-scrollbar"
           />
         </div>
 
@@ -219,7 +216,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <div className="flex items-center gap-1">
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="relative p-2 bg-transparent hover:bg-white rounded-xl text-taupe hover:text-bronze transition-all duration-300 active:scale-95 hover:shadow-btn group"
+              className="relative p-2 bg-transparent hover:bg-white/10 rounded-xl text-slate-400 hover:text-slate-200 transition-all duration-300 active:scale-95 hover:shadow-btn group"
               title="Upload Image"
             >
               <span className="absolute inset-0 rounded-xl shadow-btn-inner opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></span>
@@ -238,8 +235,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 onClick={toggleListening}
                 className={`relative p-2 rounded-xl transition-all duration-300 active:scale-95 group ${
                   isListening 
-                    ? 'bg-bronze/10 text-bronze shadow-inner' 
-                    : 'bg-transparent hover:bg-white text-taupe hover:text-bronze hover:shadow-btn'
+                    ? 'bg-white/10 text-emerald-400 shadow-inner' 
+                    : 'bg-transparent hover:bg-white/10 text-slate-400 hover:text-slate-200 hover:shadow-btn'
                 }`}
                 title="Voice Dictation"
               >
@@ -247,7 +244,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 <Mic size={18} strokeWidth={1.5} />
               </button>
               {isListening && (
-                <span className="absolute inset-0 rounded-xl border border-bronze/30 animate-ping pointer-events-none" />
+                <span className="absolute inset-0 rounded-xl border border-emerald-400/30 animate-ping pointer-events-none" />
               )}
             </div>
 
@@ -257,8 +254,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 onClick={() => setIsThinkingMenuOpen(!isThinkingMenuOpen)}
                 className={`relative flex items-center gap-1 px-2 py-1.5 rounded-xl transition-all duration-300 active:scale-95 group ${
                   isThinkingMenuOpen
-                    ? 'bg-white text-charcoal shadow-sm'
-                    : 'bg-transparent hover:bg-white text-taupe hover:text-charcoal hover:shadow-btn'
+                    ? 'bg-white text-black shadow-sm'
+                    : 'bg-transparent hover:bg-white/10 text-slate-400 hover:text-white hover:shadow-btn'
                 }`}
                 title="Thinking Mode"
               >
@@ -274,10 +271,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 4, scale: 0.97 }}
                     transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute bottom-full left-0 mb-2 w-56 bg-white/95 backdrop-blur-xl border border-clay/50 rounded-xl shadow-lg overflow-hidden z-50"
+                    className="absolute bottom-full left-0 mb-2 w-56 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg overflow-hidden z-50"
                   >
-                    <div className="px-3 py-2 border-b border-clay/30">
-                      <span className="text-[9px] font-mono text-taupe uppercase tracking-widest">Thinking Mode</span>
+                    <div className="px-3 py-2 border-b border-white/10">
+                      <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">Thinking Mode</span>
                     </div>
                     {THINKING_OPTIONS.map(({ key, label, description }) => (
                       <button
@@ -288,13 +285,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors duration-150 ${
                           thinkingMode === key
-                            ? 'bg-bronze/5'
-                            : 'hover:bg-sand/60'
+                            ? 'bg-white/10'
+                            : 'hover:bg-white/5'
                         }`}
                       >
                         <div>
-                          <div className="text-[12px] font-medium text-ink">{label}</div>
-                          <div className="text-[10px] text-taupe leading-snug">{description}</div>
+                          <div className="text-[12px] font-medium text-slate-200">{label}</div>
+                          <div className="text-[10px] text-slate-400 leading-snug">{description}</div>
                         </div>
                         {thinkingMode === key && (
                           <Check size={14} className="text-bronze flex-shrink-0 ml-2" />
@@ -308,43 +305,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           <div className="flex items-center gap-4">
-            <AnimatePresence>
-              {isFocused && !isLoading && hasContent && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 5 }}
-                  animate={{ opacity: 0.5, x: 0 }}
-                  exit={{ opacity: 0, x: 5 }}
-                  className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-taupe select-none"
-                >
-                  <span>Return</span>
-                  <CornerDownLeft size={12} strokeWidth={2} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Enhanced Send Button */}
             <button 
               onClick={handleSend}
               disabled={isLoading || !hasContent}
-              className={`relative rounded-xl transition-all duration-500 flex items-center justify-center gap-1.5 overflow-hidden ${
+              className={`relative rounded-full transition-all duration-300 flex items-center justify-center w-8 h-8 overflow-hidden ${
                 hasContent && !isLoading
-                  ? 'bg-gradient-to-b from-[#9A8879] to-bronze text-white shadow-btn-primary hover:shadow-[0_4px_12px_rgba(140,122,107,0.3)] active:scale-95 px-3 py-2.5'
-                  : 'bg-sand text-taupe/40 cursor-not-allowed shadow-inner p-2.5'
+                  ? 'bg-white text-black hover:bg-slate-200 active:scale-95'
+                  : 'bg-white/10 text-white/30 cursor-not-allowed'
               }`}
               aria-label="Send message"
             >
-              {hasContent && !isLoading && (
-                <span className="absolute inset-0 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] pointer-events-none"></span>
-              )}
               {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
               ) : (
-                <>
-                  <Send size={14} strokeWidth={2.2} className={hasContent && !isLoading ? 'translate-x-[1px] -translate-y-[1px]' : ''} />
-                  {hasContent && !isLoading && (
-                    <span className="hidden sm:inline text-[11px] font-medium tracking-wide">Send</span>
-                  )}
-                </>
+                <ArrowUp size={16} strokeWidth={2.5} />
               )}
             </button>
           </div>

@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "platform": "ios",
+  "policies": {
+    "mutations_require_native_approval": true,
+    "ai_data_sharing_requires_consent": true,
+    "payments_blocked_pending_policy": true,
+    "webview_only_rejected": true,
+    "push_notifications_require_opt_in": true,
+    "account_deletion_required": true
+  }
+}

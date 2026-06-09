@@ -21,10 +21,12 @@ interface AppContextType {
   thinkingMode: ThinkingMode;
   conversationId: string | null;
   executionPhase: string | null;
+  chatState: string;
   setThinkingMode: (mode: ThinkingMode) => void;
   handleModeSwitch: (mode: ChatMode) => void;
   handleNewChat: () => void;
   handleSendMessage: (message: string, images?: any[]) => void;
+  handleStop: () => void;
   loadConversation: (id: string) => void;
   retryFailedSaves: () => void;
   initChat: () => void;

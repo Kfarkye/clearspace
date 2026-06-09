@@ -2,38 +2,153 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* System-level color scheme alignment (optimizes native WebKit overlays/scrollbars) */
+  color-scheme: dark;
+
+  /* Dynamic iOS Safe Area Insets with solid fallbacks for desktop/older engines */
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
 @layer base {
   html, body {
-    /* Kill iOS rubber-banding and horizontal wiggle */
-    @apply overscroll-none overflow-x-hidden bg-charcoal text-sand antialiased;
-    /* Prevent iOS text size adjustment on orientation change */
-    -webkit-text-size-adjust: 100%;
-    /* Disable tap highlight for native feel */
-    -webkit-tap-highlight-color: transparent;
-    /* Force hardware acceleration for smoother composite rendering */
-    transform: translateZ(0);
-    
+    /* Hardened Viewport Lock: Completely prevents rubber-banding on the root document */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100dvh; /* Dynamic viewport height to prevent keyboard/URL bar layout shifts */
+    overflow: hidden;
+    overscroll-behavior: none;
+
+    /* Native-grade font rendering and subpixel antialiasing */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    
+    /* Clearspace Palette: Pure OLED Black background, Apple hardware white text */
+    @apply bg-[#000000] text-[#F5F5F7];
+
+    /* Prevent iOS text size adjustments on orientation change */
+    -webkit-text-size-adjust: 100%;
+    
+    /* Disable the legacy, distracting grey tap highlight */
+    -webkit-tap-highlight-color: transparent;
+    
+    /* Prevent native context menu callouts (long-press to save images/select text) */
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
 
-  input, textarea {
+  /* Core Interactive Elements: Optimize for iOS Touch Engine */
+  button, a, [role="button"] {
+    /* Eliminates the WebKit 300ms double-tap delay while keeping pinch-to-zoom */
+    touch-action: manipulation;
+    /* Prevent text selection during rapid tapping */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Form Hardening */
+  input, textarea, select, [contenteditable="true"] {
     -webkit-user-select: auto;
     user-select: auto;
+    /* CRITICAL: Enforce 16px minimum font-size on mobile safari to prevent automatic layout zooming */
+    font-size: 16px !important; 
+    background-color: transparent;
+  }
+
+  /* Smooth out scrolling behaviors globally */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer components {
+  /* ==========================================================================
+     THE HARDENED PWA APP SHELL ARCHITECTURE
+     ========================================================================== */
+  
+  /* The root container that houses the entire application layout */
+  .pwa-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+    /* Memory-safe, localized hardware acceleration layer */
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* Top Navigation Bar: Automatically accounts for Notch / Dynamic Island */
+  .pwa-header {
+    flex-shrink: 0;
+    padding-top: var(--sat);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 50;
+  }
+
+  /* Main Content Area: Isolated scrolling viewport with localized bounce prevention */
+  .pwa-content-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Isolates scroll chaining so the parent document never bounces */
+    overscroll-behavior-y: contain; 
+    /* Native-like momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+    
+    /* Pad the layout dynamically based on safe areas */
+    padding-left: calc(16px + var(--sal));
+    padding-right: calc(16px + var(--sar));
+  }
+
+  /* Bottom Tab Bar: Accounts for the iOS Home Indicator swipe-up zone */
+  .pwa-footer {
+    flex-shrink: 0;
+    padding-bottom: calc(8px + var(--sab));
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 50;
   }
 }
 
 @layer utilities {
+  /* ==========================================================================
+     ELITE UTILITIES & HARDWARE ACCELERATION
+     ========================================================================== */
+
+  /* Completely suppress scrollbars while maintaining scroll functionality */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Clearspace Glass Panel - Jony Ive Aesthetic */
+  .glass-panel {
+    background-color: rgba(22, 22, 24, 0.6); /* #161618 with opacity */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 }
 

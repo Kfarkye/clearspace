@@ -11,33 +11,35 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        tight: ['"Inter Tight"', 'Inter', 'sans-serif'],
       },
       colors: {
-        // Original Tokens
-        alabaster: '#FAF9F6',
-        sand: '#F4F3EF',
-        clay: '#EAE8E1',
-        charcoal: '#1A1A18',
-        ink: '#0F0F0E',
-        taupe: '#706E6B',
-        bronze: '#8C7A6B',
-        'warm-gold': '#B8A590',
+        // Dark Mode Tokens mapped from original
+        alabaster: '#000000',
+        sand: '#0a0a0a',
+        clay: '#27272a',
+        charcoal: '#f4f4f5',
+        ink: '#ffffff',
+        taupe: '#a1a1aa',
+        bronze: '#38bdf8', // Sky 400 for accent
+        'warm-gold': '#7dd3fc',
         sage: '#929B87',
         emerald: '#34D399',
 
-        // Alias Layer (Jony Ive Palette)
-        void: '#0F0F0E',        // Alias to ink
-        surface: '#1A1A18',     // Alias to charcoal
-        blue: '#0A84FF',        // New from Jony Ive palette
+        // Alias Layer
+        void: '#000000',
+        surface: '#0a0a0a',
+        blue: '#0A84FF',
       },
       boxShadow: {
-        'glass': '0 8px 32px rgba(140, 122, 107, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-        'glass-hover': '0 14px 48px rgba(140, 122, 107, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
-        'glass-sm': '0 4px 16px rgba(140, 122, 107, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
-        'btn': '0 2px 5px rgba(140, 122, 107, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
-        'btn-hover': '0 4px 12px rgba(140, 122, 107, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-        'btn-primary': '0 2px 6px rgba(140, 122, 107, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-        'message': '0 1px 3px rgba(140, 122, 107, 0.04)',
+        'glass': '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+        'glass-hover': '0 14px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        'glass-sm': '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+        'btn': '0 2px 5px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        'btn-hover': '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+        'btn-primary': '0 2px 6px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        'message': '0 1px 3px rgba(0, 0, 0, 0.2)',
       },
       animation: {
         'thinking-dot': 'thinkingDot 1.4s ease-in-out infinite',
@@ -60,5 +62,7 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }

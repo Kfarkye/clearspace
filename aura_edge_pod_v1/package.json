@@ -1,0 +1,29 @@
+{
+  "name": "aura-edge-pod",
+  "version": "1.0.0",
+  "description": "AURA Edge Pod control plane",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env app.js",
+    "sign:policy": "node scripts/sign-policy.js",
+    "test:core": "node --test tests/production_safeguards.test.js",
+    "test:ios": "node --test backend/tests/test-ios-compliance.js",
+    "test:lanes": "node --test backend/tests/test-lanes.js",
+    "build:manifest": "node backend/scripts/export-privacy-manifest.js",
+    "audit:iam": "node backend/scripts/audit-iam-contract.js",
+    "test": "npm run audit:iam && npm run test:core && npm run test:ios && npm run test:lanes"
+  },
+  "dependencies": {
+    "@google-cloud/spanner": "^7.3.0",
+    "@google-cloud/tasks": "^5.0.0",
+    "@google-cloud/secret-manager": "^5.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "google-auth-library": "^9.7.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "helmet": "^7.1.0"
+  }
+}

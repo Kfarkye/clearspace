@@ -1,0 +1,42 @@
+[
+  {
+    "server_id": "workspace_google_mcp",
+    "name": "Google Workspace MCP",
+    "runtime": "cloud_run",
+    "trust_level": "approved",
+    "endpoint_url": "https://workspace-mcp.aura-internal.com",
+    "allowed_tools": [
+      {
+        "tool": "manage_email",
+        "operations": [
+          { "name": "read", "side_effect": "READ_ONLY", "trustgate": false },
+          { "name": "draft", "side_effect": "WRITE_LOW_RISK", "trustgate": true },
+          { "name": "send", "side_effect": "WRITE_HIGH_RISK", "trustgate": true }
+        ]
+      }
+    ],
+    "blocked_operations": ["send_without_approval"],
+    "secrets_policy": "no_tokens_in_prompt_or_trace",
+    "timeout_ms": 8000,
+    "degraded_status": "WORKSPACE_SOURCE_UNAVAILABLE"
+  },
+  {
+    "server_id": "database_mcp_spanner",
+    "name": "Database MCP (Spanner)",
+    "runtime": "cloud_run",
+    "trust_level": "approved",
+    "endpoint_url": "https://database-mcp.aura-internal.com",
+    "allowed_tools": [
+      {
+        "tool": "query_database",
+        "operations": [
+          { "name": "read_table", "side_effect": "READ_ONLY", "trustgate": false }
+        ]
+      }
+    ],
+    "blocked_operations": ["drop_table"],
+    "secrets_policy": "no_tokens_in_prompt_or_trace",
+    "timeout_ms": 15000,
+    "degraded_status": "DATABASE_SOURCE_UNAVAILABLE"
+  }
+]

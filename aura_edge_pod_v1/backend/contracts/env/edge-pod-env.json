@@ -1,0 +1,7 @@
+{
+  "description": "AURA Edge Pod configuration blueprint",
+  "environment": "production",
+  "required": [ "GOOGLE_CLOUD_PROJECT", "SPANNER_INSTANCE", "SPANNER_DATABASE", "CLOUD_TASKS_QUEUE", "WORKER_ENDPOINT", "TASK_SERVICE_ACCOUNT_EMAIL" ],
+  "forbidden": [ "OAUTH_CLIENT_SECRET", "USER_REFRESH_TOKEN", "GEMINI_API_KEY", "STRIPE_SECRET_KEY" ],
+  "models": { "router": "gemini-3.5-flash", "tools": "gemini-3.1-pro" }
+}

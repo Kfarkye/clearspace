@@ -182,16 +182,16 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 250, mass: 0.8 }}
-            className="fixed inset-y-0 left-0 w-[380px] bg-sand border-r border-charcoal/10 shadow-glass z-50 flex flex-col font-sans overflow-hidden"
+            className="fixed inset-y-0 left-0 w-[380px] bg-[#0a0a0a] border-r border-white/5 shadow-glass z-50 flex flex-col font-sans overflow-hidden"
           >
             {/* Dynamic Header */}
-            <header className="flex items-center justify-between px-6 py-5 border-b border-charcoal/10 shrink-0 bg-sand z-10">
+            <header className="flex items-center justify-between px-6 py-5 border-b border-white/5 shrink-0 bg-[#0a0a0a] z-10">
               {view === 'history' ? (
-                <span className="text-charcoal font-medium tracking-tight">History</span>
+                <span className="text-white font-medium tracking-tight">History</span>
               ) : (
                 <button 
                   onClick={() => setView('history')}
-                  className="flex items-center gap-1.5 text-taupe hover:text-charcoal transition-colors outline-none"
+                  className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors outline-none"
                 >
                   <ChevronLeft size={16} strokeWidth={2.5} />
                   <span className="text-sm font-medium tracking-tight">Back</span>
@@ -200,14 +200,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               
               <button 
                 onClick={onClose}
-                className="text-taupe hover:text-charcoal text-xs font-mono uppercase tracking-widest transition-colors duration-200 focus:outline-none"
+                className="text-slate-400 hover:text-white text-xs font-mono uppercase tracking-widest transition-colors duration-200 focus:outline-none"
               >
                 Close
               </button>
             </header>
 
             {/* Dynamic Content Area */}
-            <div className="flex-1 overflow-y-auto no-scrollbar relative bg-sand">
+            <div className="flex-1 overflow-y-auto no-scrollbar relative bg-[#0a0a0a]">
               <AnimatePresence mode="wait">
                 {view === 'history' && (
                   <motion.div
@@ -223,14 +223,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                         <div className="px-6 flex flex-col gap-6 mt-2">
                           {[1, 2, 3].map(i => (
                             <div key={i} className="flex flex-col gap-2">
-                              <div className="w-16 h-3 bg-charcoal/5 rounded animate-pulse" />
-                              <div className="w-full h-4 bg-charcoal/5 rounded animate-pulse" />
-                              <div className="w-3/4 h-4 bg-charcoal/5 rounded animate-pulse" />
+                              <div className="w-16 h-3 bg-white/5 rounded animate-pulse" />
+                              <div className="w-full h-4 bg-white/5 rounded animate-pulse" />
+                              <div className="w-3/4 h-4 bg-white/5 rounded animate-pulse" />
                             </div>
                           ))}
                         </div>
                       ) : conversations.length === 0 ? (
-                        <div className="px-6 py-8 text-taupe text-[12px] font-mono">
+                        <div className="px-6 py-8 text-slate-500 text-[12px] font-mono">
                           No conversations yet.
                         </div>
                       ) : (
@@ -239,7 +239,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                             <motion.div layout key={group.label} className="mb-8 last:mb-0">
                               <motion.h3 
                                 layout="position"
-                                className="px-6 mb-3 text-taupe font-mono text-[10px] uppercase tracking-widest"
+                                className="px-6 mb-3 text-slate-500 font-mono text-[10px] uppercase tracking-widest"
                               >
                                 {group.label}
                               </motion.h3>
@@ -256,18 +256,18 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                       onClick={() => onSelectConversation(conv.conversationId)}
                                       className={`group relative flex flex-col gap-1.5 px-6 py-3 cursor-pointer transition-all duration-200 ease-out ${
                                         isActive 
-                                          ? 'bg-charcoal/5 border-l-[3px] border-charcoal' 
-                                          : 'border-l-[3px] border-transparent hover:bg-charcoal/[0.02]'
+                                          ? 'bg-white/5 border-l-[3px] border-white' 
+                                          : 'border-l-[3px] border-transparent hover:bg-white/[0.02]'
                                       }`}
                                     >
                                       <div className="flex items-start justify-between gap-4">
-                                        <span className={`text-[12.5px] leading-snug truncate font-medium transition-colors duration-200 ${isActive ? 'text-charcoal' : 'text-charcoal/70 group-hover:text-charcoal'}`}>
+                                        <span className={`text-[12.5px] leading-snug truncate font-medium transition-colors duration-200 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
                                           {conv.title || 'Untitled'}
                                         </span>
                                       </div>
                                       
                                       <div className="flex items-center justify-between h-4">
-                                        <span className="text-taupe text-[10px] font-mono">
+                                        <span className="text-slate-500 text-[10px] font-mono">
                                           {relativeTime(conv.updatedAt)}
                                         </span>
                                         
@@ -275,14 +275,14 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                                           <button
                                             onClick={(e) => handleExport(e, conv)}
                                             className={`text-[9px] font-mono uppercase tracking-wider transition-colors duration-200 focus:outline-none ${
-                                              copiedId === conv.conversationId ? 'text-emerald-600' : 'text-taupe hover:text-charcoal'
+                                              copiedId === conv.conversationId ? 'text-emerald-400' : 'text-slate-400 hover:text-white'
                                             }`}
                                           >
                                             {copiedId === conv.conversationId ? 'Copied' : 'Copy'}
                                           </button>
                                           <button
                                             onClick={(e) => handleTogglePin(e, conv)}
-                                            className="text-[9px] font-mono uppercase tracking-wider text-taupe hover:text-charcoal transition-colors duration-200 focus:outline-none"
+                                            className="text-[9px] font-mono uppercase tracking-wider text-slate-400 hover:text-white transition-colors duration-200 focus:outline-none"
                                           >
                                             {conv.isPinned ? 'Unpin' : 'Pin'}
                                           </button>
@@ -338,47 +338,47 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             {/* Minimal Integrations Menu Footer (Only visible in history view) */}
             <AnimatePresence>
               {view === 'history' && (
-                <motion.div 
+                  <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.2 }}
-                  className="shrink-0 border-t border-charcoal/10 bg-[#FAFAFC] p-3 flex flex-col gap-1.5"
+                  className="shrink-0 border-t border-white/5 bg-[#111113] p-3 flex flex-col gap-1.5"
                 >
                   <button 
                     onClick={() => setView('github')}
-                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl hover:bg-black/[0.03] transition-colors outline-none group"
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.03] transition-colors outline-none group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-md bg-black/5 flex items-center justify-center text-charcoal/60">
+                      <div className="w-6 h-6 rounded-md bg-white/5 flex items-center justify-center text-slate-400">
                         <GithubIcon size={13} />
                       </div>
                       <div className="flex flex-col items-start">
-                        <span className="text-[12.5px] font-medium text-charcoal tracking-tight">GitHub Integration</span>
-                        <span className="text-[10px] text-taupe tracking-tight">
+                        <span className="text-[12.5px] font-medium text-white tracking-tight">GitHub Integration</span>
+                        <span className="text-[10px] text-slate-400 tracking-tight">
                           {isGitHubConnected ? `Connected as ${githubUser}` : 'Not connected'}
                         </span>
                       </div>
                     </div>
-                    <ChevronRight size={14} className="text-taupe group-hover:text-charcoal transition-colors" />
+                    <ChevronRight size={14} className="text-slate-500 group-hover:text-slate-200 transition-colors" />
                   </button>
 
                   <button 
                     onClick={() => setView('workspace')}
-                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl hover:bg-black/[0.03] transition-colors outline-none group"
+                    className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl hover:bg-white/[0.03] transition-colors outline-none group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-md bg-black/5 flex items-center justify-center text-charcoal/60">
+                      <div className="w-6 h-6 rounded-md bg-white/5 flex items-center justify-center text-slate-400">
                         <Cloud size={13} strokeWidth={2.5} />
                       </div>
                       <div className="flex flex-col items-start">
-                        <span className="text-[12.5px] font-medium text-charcoal tracking-tight">Google Workspace</span>
+                        <span className="text-[12.5px] font-medium text-white tracking-tight">Google Workspace</span>
                         {/* We use a static state here since we don't have the context directly inside this component, 
                             but we could pass it as a prop. For now, just 'Manage Access' */}
-                        <span className="text-[10px] text-taupe tracking-tight">Manage Access</span>
+                        <span className="text-[10px] text-slate-400 tracking-tight">Manage Access</span>
                       </div>
                     </div>
-                    <ChevronRight size={14} className="text-taupe group-hover:text-charcoal transition-colors" />
+                    <ChevronRight size={14} className="text-slate-500 group-hover:text-slate-200 transition-colors" />
                   </button>
                 </motion.div>
               )}

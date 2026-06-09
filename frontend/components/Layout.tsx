@@ -1,151 +1,151 @@
-// ============================================================================
-// Layout — Shared glass header + navigation for all routes
-//
-// Pulls all state from AppContext. Renders the ambient background,
-// floating header, mode switcher, nav links, and <Outlet />.
-// ============================================================================
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Plus, RefreshCw, Cloud, Clock, Settings, PanelLeft } from 'lucide-react';
+import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import { useAppContext } from '../context/AppContext';
 
 const Layout: React.FC = () => {
   const {
-    chatMode,
     handleNewChat,
-    initChat,
-    error,
     isWorkspaceConnected,
     handleConnectWorkspace,
-    setIsSidebarOpen,
-    isSidebarOpen,
+    isGitHubConnected,
+    githubUser,
+    handleConnectGitHub,
   } = useAppContext();
 
   const location = useLocation();
-  const isChat = location.pathname === '/';
+  const [connectAppsOpen, setConnectAppsOpen] = useState(true);
+
+  // Clean minimalist navigation
+  const navItems = [
+    { name: 'Chat', path: '/' },
+    { name: 'Agents', path: '/agents' },
+    { name: 'History', path: '/history' },
+  ];
+
+  console.log("Layout component is executing!");
 
   return (
-    <div className="relative flex h-[100dvh] max-w-[100vw] bg-sand text-charcoal font-sans overflow-hidden justify-center pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-      {/* Ambient Background Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,249,246,1)_0%,transparent_100%)] pointer-events-none z-0" />
-
-      <div className="relative w-full max-w-3xl flex flex-col h-full z-10">
-        {/* ─── Floating Glass Header ─────────────────────────────── */}
-        <header className="absolute top-0 left-0 right-0 h-14 px-4 sm:px-6 flex items-center justify-between bg-alabaster/50 backdrop-blur-2xl z-50 border-b border-white/40 shadow-[0_4px_24px_rgba(140,122,107,0.03)]">
-          {/* Left: Status + Brand */}
-          <div className="flex items-center gap-3 w-1/3">
-            {isChat && (
-              <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/40 backdrop-blur-xl border border-white/50 shadow-btn hover:shadow-btn-hover hover:bg-white/60 active:scale-90 transition-all duration-300 text-taupe hover:text-charcoal group"
-                title="Toggle Sidebar"
-              >
-                <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
-                <PanelLeft size={12} strokeWidth={2} className="transition-transform duration-300" />
-              </button>
-            )}
-            <NavLink to="/" className="flex items-center gap-3 group">
-              <div className="relative flex items-center justify-center w-2 h-2">
-                <span className="relative w-1.5 h-1.5 rounded-full bg-bronze" />
-              </div>
-              <span className="text-[11px] font-medium tracking-[0.25em] text-taupe select-none group-hover:text-charcoal transition-colors">
-                TRUTH
-              </span>
-            </NavLink>
+    <div className="pwa-shell flex-row w-full bg-[#000000] text-slate-200 font-sans">
+      
+      {/* ─── Left Sidebar ────────────────────────────────────────── */}
+      <aside className="w-[260px] flex-shrink-0 flex flex-col border-r border-white/[0.08] bg-[#000000] z-20">
+        
+        {/* Brand & New Chat */}
+        <div className="p-5 flex flex-col gap-6">
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center w-5 h-5 rounded-full border-[2.5px] border-white">
+              <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+            </div>
+            <span className="text-[14px] font-bold tracking-widest text-white uppercase select-none">
+              TRUTH
+            </span>
           </div>
 
-          {/* Center: Brand or Route Title */}
-          <div className="flex justify-center w-1/3">
-            {isChat ? (
-              null
-            ) : (
-              <span className="text-[11px] font-medium tracking-[0.2em] text-taupe uppercase select-none">
-                {location.pathname === '/settings' ? 'Settings' : 'History'}
-              </span>
-            )}
-          </div>
+          <button 
+            onClick={handleNewChat}
+            className="w-full bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] text-white py-2 rounded-full text-[12px] font-medium transition-colors shadow-sm flex justify-center items-center gap-2"
+          >
+            <span className="text-white/40 text-[14px] font-light leading-none mb-[2px]">+</span> New Chat
+          </button>
+        </div>
 
-          {/* Right: Navigation + Actions */}
-          <div className="flex items-center justify-end gap-2 w-1/3">
-            {error && (
-              <span className="text-bronze text-[10px] font-mono uppercase tracking-wider mr-1 truncate max-w-[100px]">
-                {error}
-              </span>
-            )}
-
-            {/* History Nav */}
-            <NavLink
-              to="/history"
-              className={({ isActive }) =>
-                `relative flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-xl border shadow-btn transition-all duration-300 active:scale-90 group ${
+        {/* Primary Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5 no-scrollbar">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path || (item.path === '/agents' && location.pathname.startsWith('/agents'));
+            return (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                className={`block w-full px-3 py-2.5 rounded-lg text-[13px] transition-colors select-none ${
                   isActive 
-                    ? 'bg-white/70 border-bronze/30 text-charcoal shadow-btn-hover' 
-                    : 'bg-white/40 border-white/50 text-taupe hover:text-charcoal hover:bg-white/60 hover:shadow-btn-hover'
-                }`
-              }
-              title="History"
-            >
-              <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
-              <Clock size={12} strokeWidth={2} className="transition-transform group-hover:rotate-[-20deg] duration-300" />
-            </NavLink>
-
-            {/* Settings Nav */}
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                `relative flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-xl border shadow-btn transition-all duration-300 active:scale-90 group ${
-                  isActive 
-                    ? 'bg-white/70 border-bronze/30 text-charcoal shadow-btn-hover' 
-                    : 'bg-white/40 border-white/50 text-taupe hover:text-charcoal hover:bg-white/60 hover:shadow-btn-hover'
-                }`
-              }
-              title="Settings"
-            >
-              <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
-              <Settings size={12} strokeWidth={2} className="transition-transform group-hover:rotate-90 duration-300" />
-            </NavLink>
-
-            {/* Connect Workspace — on chat when disconnected */}
-            {isChat && !isWorkspaceConnected && (
-              <button 
-                onClick={handleConnectWorkspace}
-                className="relative flex items-center justify-center px-3 h-7 rounded-full backdrop-blur-xl border bg-white/40 border-white/50 text-taupe hover:text-charcoal hover:bg-white/60 shadow-btn transition-all duration-300 active:scale-95 group"
-                title="Connect Workspace"
+                    ? 'bg-white/10 text-white font-medium' 
+                    : 'text-zinc-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                }`}
               >
-                <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
-                <Cloud size={13} strokeWidth={2} className="mr-1.5" />
-                <span className="text-[10px] font-medium tracking-wide">Connect</span>
-              </button>
-            )}
+                {item.name}
+              </NavLink>
+            );
+          })}
+        </nav>
 
-            {/* New Session */}
+        {/* Bottom Section: Connect Apps & Settings */}
+        <div className="px-4 py-5 flex flex-col gap-6 mt-auto">
+          
+          {/* Connect Apps Accordion */}
+          <div className="flex flex-col gap-3">
             <button 
-              onClick={handleNewChat}
-              className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/40 backdrop-blur-xl border border-white/50 shadow-btn hover:shadow-btn-hover hover:bg-white/60 active:scale-90 transition-all duration-300 text-taupe hover:text-charcoal group"
-              title="New Session ⌘N"
+              onClick={() => setConnectAppsOpen(!connectAppsOpen)}
+              className="flex items-center gap-2 text-[12px] font-medium text-white select-none hover:opacity-80 transition-opacity w-full text-left"
             >
-              <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
-              <Plus size={14} strokeWidth={2} className="transition-transform group-hover:rotate-90 duration-300" />
+              Integrations
+              {connectAppsOpen ? (
+                <CaretUp weight="bold" className="text-zinc-400" />
+              ) : (
+                <CaretDown weight="bold" className="text-zinc-400" />
+              )}
             </button>
             
-            {/* Reconnect */}
-            <button 
-              onClick={initChat}
-              className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/40 backdrop-blur-xl border border-white/50 shadow-btn hover:shadow-btn-hover hover:bg-white/60 active:scale-90 transition-all duration-300 text-taupe hover:text-charcoal group"
-              title="Reconnect ⌘R"
-            >
-              <span className="absolute inset-0 rounded-full shadow-btn-inner pointer-events-none" />
-              <RefreshCw size={12} strokeWidth={2} className="transition-transform group-hover:rotate-180 duration-500" />
-            </button>
+            {connectAppsOpen && (
+              <div className="flex flex-col gap-3 pl-1">
+                {/* Google Workspace */}
+                <div className="flex items-center justify-between text-[11px] group">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isWorkspaceConnected ? 'bg-emerald-500' : 'bg-zinc-600 group-hover:bg-zinc-400'}`}></div>
+                    <span className={`transition-colors ${isWorkspaceConnected ? 'text-zinc-400' : 'text-zinc-400 group-hover:text-slate-200'}`}>Google Workspace</span>
+                  </div>
+                  {isWorkspaceConnected ? (
+                    <span className="text-zinc-600">Authed</span>
+                  ) : (
+                    <button 
+                      onClick={handleConnectWorkspace}
+                      className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+                
+                {/* GitHub */}
+                <div className="flex items-center justify-between text-[11px] group">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isGitHubConnected ? 'bg-emerald-500' : 'bg-zinc-600 group-hover:bg-zinc-400'}`}></div>
+                    <span className={`transition-colors ${isGitHubConnected ? 'text-zinc-400' : 'text-zinc-400 group-hover:text-slate-200'}`}>GitHub</span>
+                  </div>
+                  {isGitHubConnected ? (
+                    <span className="text-zinc-600 truncate max-w-[80px]" title={githubUser}>{githubUser || 'Authed'}</span>
+                  ) : (
+                    <button 
+                      onClick={handleConnectGitHub}
+                      className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        </header>
 
-        {/* ─── Routed Content ────────────────────────────────────── */}
-        <main className="flex-1 h-full w-full overflow-y-auto overflow-x-hidden overscroll-y-contain pt-14 pb-[env(safe-area-inset-bottom)]">
-          <Outlet />
-        </main>
-      </div>
+          {/* Settings */}
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => `text-[12px] font-medium transition-colors select-none ${isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            Settings
+          </NavLink>
+        </div>
+      </aside>
+
+      {/* ─── Main Content Area ───────────────────────────────────── */}
+      <main className="flex-1 relative h-full overflow-y-auto overflow-x-hidden z-10 bg-[#000000] pwa-content-scroll no-scrollbar">
+        {/* Subtle cinematic glow inside main area */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.03)_0%,transparent_60%)] pointer-events-none mix-blend-screen" />
+        
+        <Outlet />
+      </main>
+
     </div>
   );
 };

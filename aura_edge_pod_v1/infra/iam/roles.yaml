@@ -1,0 +1,24 @@
+bindings:
+  - role: roles/spanner.databaseUser
+    members:
+      - serviceAccount:aura-edge-pod-sa@aura-production-2026.iam.gserviceaccount.com
+      - serviceAccount:aura-worker-sa@aura-production-2026.iam.gserviceaccount.com
+      - serviceAccount:aura-research-worker-sa@aura-production-2026.iam.gserviceaccount.com
+      - serviceAccount:aura-media-resolver-sa@aura-production-2026.iam.gserviceaccount.com
+      - serviceAccount:aura-sports-ingest-sa@aura-production-2026.iam.gserviceaccount.com
+
+  - role: roles/cloudtasks.enqueuer
+    members:
+      - serviceAccount:aura-edge-pod-sa@aura-production-2026.iam.gserviceaccount.com
+
+  - role: roles/run.invoker
+    members:
+      - serviceAccount:aura-task-invoker-sa@aura-production-2026.iam.gserviceaccount.com
+
+  - role: roles/secretmanager.secretAccessor
+    members:
+      - serviceAccount:aura-oauth-broker-sa@aura-production-2026.iam.gserviceaccount.com
+
+  - role: roles/cloudkms.cryptoKeyDecrypter
+    members:
+      - serviceAccount:aura-oauth-broker-sa@aura-production-2026.iam.gserviceaccount.com

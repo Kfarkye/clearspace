@@ -1,0 +1,34 @@
+{
+  "policy": {
+    "allowedTransitions": {
+      "PENDING": [
+        "APPROVED",
+        "REJECTED",
+        "EXPIRED"
+      ],
+      "APPROVED": [
+        "EXECUTING",
+        "EXPIRED",
+        "DISCARDED"
+      ],
+      "REJECTED": [
+        "PENDING"
+      ],
+      "EXECUTING": [
+        "EXECUTED",
+        "FAILED"
+      ],
+      "EXECUTED": [],
+      "FAILED": [
+        "PENDING"
+      ],
+      "EXPIRED": [
+        "PENDING"
+      ],
+      "DISCARDED": []
+    },
+    "requiredSignatures": 1
+  },
+  "gitCommitHash": "0000000000000000000000000000000000000000",
+  "signature": "MEUCIQC5duLXiq/l2bOAkxDv9iJxv58Mjio5t2Df5A4Gwdz36gIgJcK+oSspWJXrj1H7NtPk7B3jJqk4CCJOCj1m26yK0p8="
+}

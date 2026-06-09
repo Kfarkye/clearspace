@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    /* Kill iOS rubber-banding and horizontal wiggle */
+    @apply overscroll-none overflow-x-hidden bg-[#000000] text-slate-200 antialiased;
+    /* Prevent iOS text size adjustment on orientation change */
+    -webkit-text-size-adjust: 100%;
+    /* Disable tap highlight for native feel */
+    -webkit-tap-highlight-color: transparent;
+    /* Force hardware acceleration for smoother composite rendering */
+    transform: translateZ(0);
+    
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: #EAE8E1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D1CFC7;
+}
+
+.prose pre {
+  background-color: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Model message accent borders */
+.accent-border-operator {
+  border-left: 2px solid rgba(140, 122, 107, 0.15);
+  padding-left: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.accent-border-operator:hover {
+  border-left-color: rgba(140, 122, 107, 0.35);
+}
+
+.accent-border-standard {
+  border-left: 2px solid rgba(59, 130, 246, 0.15);
+  padding-left: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.accent-border-standard:hover {
+  border-left-color: rgba(59, 130, 246, 0.35);
+}
+
+/* Gradient focus border for input */
+.input-gradient-border {
+  background: linear-gradient(135deg, #8C7A6B, #B8A590, #8C7A6B);
+  background-size: 200% 200%;
+  animation: shimmer 2s linear infinite;
+  padding: 1.5px;
+  border-radius: 1rem;
+}
+
+.input-gradient-border>div {
+  background: white;
+  border-radius: calc(1rem - 1.5px);
+}
+
+/* Suggestion chip hover */
+.suggestion-chip {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.suggestion-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(140, 122, 107, 0.1);
+}
+
+.suggestion-chip:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Thinking dots stagger */
+.thinking-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.thinking-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.thinking-dot:nth-child(3) {
+  animation-delay: 0.32s;
+}

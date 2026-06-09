@@ -22,8 +22,14 @@ import { ThinkingMode } from '../hooks/useChat';
 import { useImageUpload } from '../hooks/useImageUpload';
 import ErrorBoundary from './ErrorBoundary';
 import { DiagnosticArtifact } from './DiagnosticArtifact';
+import { JobManifestArtifact } from './JobManifestArtifact';
 import { ArtifactLedgerCard } from './chat/artifact-ledger-card';
+import { ChatSuggestions } from './ChatSuggestions';
+import { MessageRenderer } from './MessageRenderer';
 import { MlbCoreLedgerArtifact } from './MlbCoreLedgerArtifact';
+import { MlbSpannerMatchupCard } from './MlbSpannerMatchupCard';
+import { MlbSpannerChatResults } from './MlbSpannerChatResults';
+import { WorldCupSpannerChatResults } from './WorldCupSpannerChatResults';
 import { triggerHaptic } from '../lib/haptics';
 
 interface TruthChatProps {
@@ -36,6 +42,7 @@ interface TruthChatProps {
   workspaceToken?: string | null;
   onRetrySave?: () => void;
   executionPhase?: string | null;
+  onStop?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -55,17 +62,17 @@ const CodeBlock: React.FC<{ lang: string; content: string }> = React.memo(({ lan
 
   if (!isActualCode) {
     return (
-      <div className="relative group my-4 rounded-xl overflow-hidden bg-white border border-clay/40">
-        <div className="flex items-center justify-end px-4 py-1.5 border-b border-clay/30">
+      <div className="relative group my-4 rounded-xl overflow-hidden bg-[#18181b] border border-white/10">
+        <div className="flex items-center justify-end px-4 py-1.5 border-b border-white/5">
           <button
             onClick={handleCopy}
-            className="flex items-center justify-center w-7 h-7 text-taupe hover:text-charcoal transition-colors rounded-md hover:bg-clay/20 active:scale-90"
+            className="flex items-center justify-center w-7 h-7 text-slate-400 hover:text-slate-200 transition-colors rounded-md hover:bg-white/10 active:scale-90"
             aria-label="Copy"
           >
-            {copied ? <Check size={14} className="text-bronze" /> : <Copy size={14} />}
+            {copied ? <Check size={14} className="text-emerald" /> : <Copy size={14} />}
           </button>
         </div>
-        <pre className="px-5 py-4 overflow-x-auto font-mono text-[12px] text-charcoal/80 leading-relaxed no-scrollbar whitespace-pre-wrap">
+        <pre className="px-5 py-4 overflow-x-auto font-mono text-[12px] text-slate-300 leading-relaxed no-scrollbar whitespace-pre-wrap">
           <code>{content}</code>
         </pre>
       </div>
@@ -73,18 +80,18 @@ const CodeBlock: React.FC<{ lang: string; content: string }> = React.memo(({ lan
   }
 
   return (
-    <div className="relative group my-6 rounded-xl overflow-hidden bg-charcoal border border-charcoal/90">
-      <div className="flex items-center justify-between px-5 py-2.5 bg-black/20 border-b border-white/5">
+    <div className="relative group my-6 rounded-xl overflow-hidden bg-[#0a0a0a] border border-white/10">
+      <div className="flex items-center justify-between px-5 py-2.5 bg-white/5 border-b border-white/5">
         <span className="text-[11px] font-mono text-bronze uppercase tracking-widest">{lang}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center justify-center w-7 h-7 text-taupe hover:text-sand transition-colors rounded-md hover:bg-white/5 active:scale-90"
+          className="flex items-center justify-center w-7 h-7 text-slate-400 hover:text-slate-200 transition-colors rounded-md hover:bg-white/10 active:scale-90"
           aria-label="Copy code"
         >
-          {copied ? <Check size={14} className="text-bronze" /> : <Copy size={14} />}
+          {copied ? <Check size={14} className="text-emerald" /> : <Copy size={14} />}
         </button>
       </div>
-      <pre className="p-5 overflow-x-auto font-mono text-[13px] text-sand/90 leading-relaxed no-scrollbar">
+      <pre className="p-5 overflow-x-auto font-mono text-[13px] text-slate-200 leading-relaxed no-scrollbar">
         <code>{content}</code>
       </pre>
     </div>
@@ -95,33 +102,46 @@ const CodeBlock: React.FC<{ lang: string; content: string }> = React.memo(({ lan
 /* Thinking indicator                                                  */
 /* ------------------------------------------------------------------ */
 
-const ThinkingIndicator: React.FC<{ executionPhase?: string | null }> = ({ executionPhase }) => {
+const ThinkingIndicator: React.FC<{ executionPhase?: string | null, onStop?: () => void }> = ({ executionPhase, onStop }) => {
   const [step, setStep] = useState(0);
-  // Plain, spoken-aloud phrasing — not "Parsing intent / Synthesizing context".
   const steps = ['Working on it', 'Pulling the numbers', 'Almost there'];
 
   useEffect(() => {
-    // If the backend is sending a real phase, don't run the fake rotation.
     if (executionPhase) return;
     const interval = setInterval(() => setStep((s) => (s + 1) % steps.length), 1500);
     return () => clearInterval(interval);
   }, [executionPhase]);
 
+  const isError = executionPhase === 'The response connection dropped. Try again.';
+
   return (
-    <div className="flex items-center gap-3 py-6">
-      <div className="flex gap-1">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            animate={{ opacity: [0.25, 1, 0.25] }}
-            transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.18, ease: 'easeInOut' }}
-            className="w-1.5 h-1.5 bg-charcoal/70 rounded-full"
-          />
-        ))}
+    <div className="flex flex-col gap-2 py-6">
+      <div className="flex items-center gap-3">
+        {!isError && (
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                animate={{ opacity: [0.25, 1, 0.25] }}
+                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.18, ease: 'easeInOut' }}
+                className="w-1.5 h-1.5 bg-charcoal/70 rounded-full"
+              />
+            ))}
+          </div>
+        )}
+        {isError && <AlertCircle size={14} className="text-[#C45C5C]" />}
+        <span className={`font-mono text-xs tracking-wide ${isError ? 'text-[#C45C5C]' : 'text-taupe'}`}>
+          {executionPhase || steps[step]}
+        </span>
       </div>
-      <span className="font-mono text-xs text-taupe tracking-wide">
-        {executionPhase || steps[step]}
-      </span>
+      {executionPhase === 'This is taking longer than usual.' && onStop && (
+        <button 
+          onClick={onStop} 
+          className="ml-[28px] text-[10px] uppercase tracking-wider text-slate-500 hover:text-[#C45C5C] transition-colors self-start cursor-pointer"
+        >
+          Cancel
+        </button>
+      )}
     </div>
   );
 };
@@ -135,13 +155,13 @@ type Segment =
   | { kind: 'code'; lang: string; code: string }
   | { kind: 'ledger'; id: string; type: 'html' | 'code' | 'json' };
 
-const PROSE_CLASS = `prose max-w-none text-[14px] leading-7 text-charcoal space-y-4
-  prose-p:my-3 prose-headings:text-ink prose-headings:font-medium prose-headings:tracking-tight prose-headings:my-5
+const PROSE_CLASS = `prose max-w-none text-[14px] leading-7 text-slate-200 space-y-4
+  prose-p:my-3 prose-headings:text-white prose-headings:font-medium prose-headings:tracking-tight prose-headings:my-5
   prose-ul:list-disc prose-ul:pl-5 prose-ol:list-decimal prose-ol:pl-5 prose-li:my-1.5
   prose-a:text-bronze hover:prose-a:text-bronze/80 prose-a:underline-offset-4 transition-colors
-  prose-strong:font-semibold prose-strong:text-ink
-  prose-code:bg-clay/30 prose-code:text-charcoal prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-[13px] prose-code:font-mono
-  prose-pre:bg-white prose-pre:border prose-pre:border-clay/40 prose-pre:text-charcoal/80 prose-pre:rounded-xl prose-pre:p-5 prose-pre:text-[13px] prose-pre:font-mono`;
+  prose-strong:font-semibold prose-strong:text-white
+  prose-code:bg-white/10 prose-code:text-slate-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-[13px] prose-code:font-mono
+  prose-pre:bg-[#0a0a0a] prose-pre:border prose-pre:border-clay/40 prose-pre:text-slate-300 prose-pre:rounded-xl prose-pre:p-5 prose-pre:text-[13px] prose-pre:font-mono`;
 
 // Parse markdown into a flat, serializable segment list. Pure function, no DOM.
 function parseSegments(content: string): Segment[] {
@@ -230,11 +250,15 @@ function renderCodeSegment(
   let isDiagnostic = langLower.startsWith('diagnostic');
   let isMLBScoreboard = langLower.startsWith('mlbscoreboard');
   let isMLBCoreLedger = langLower.startsWith('mlbcoreledger');
+  let isMLBSpannerContext = langLower.startsWith('mlbspannercontext');
+  let isMLBSpannerResults = langLower.startsWith('mlbspannerresults');
+  let isWorldCupSpannerResults = langLower.startsWith('worldcupspannerresults');
+  let isJobManifest = langLower.startsWith('jobmanifest');
 
   const noTagMatch =
     !isBettingAngles && !isScoreboard && !isWorkspace && !isTravelHealth && !isSidebar &&
     !isCodeSandbox && !isEmailViewer && !isDataTable && !isLicensing && !isWorldCup &&
-    !isWorldCupGroup && !isYouTube && !isPlayerProps && !isDiagnostic && !isMLBScoreboard && !isMLBCoreLedger;
+    !isWorldCupGroup && !isYouTube && !isPlayerProps && !isDiagnostic && !isMLBScoreboard && !isMLBCoreLedger && !isMLBSpannerContext && !isMLBSpannerResults && !isWorldCupSpannerResults && !isJobManifest;
 
   if (noTagMatch && (langLower === 'json' || langLower === 'text')) {
     if (code.includes('"analysis_markdown"') && code.includes('"angles"')) isBettingAngles = true;
@@ -253,10 +277,14 @@ function renderCodeSegment(
     else if (code.includes('"root_cause"') && code.includes('"proposed_fix"')) isDiagnostic = true;
   }
 
+  if (isMLBSpannerContext) return <MlbSpannerMatchupCard key={key} dataString={code} />;
+  if (isMLBSpannerResults) return <MlbSpannerChatResults key={key} dataString={code} />;
+  if (isWorldCupSpannerResults) return <WorldCupSpannerChatResults key={key} dataString={code} />;
   if (isMLBCoreLedger) return <MlbCoreLedgerArtifact key={key} dataString={code} />;
   if (isMLBScoreboard) return <MLBScoreboard key={key} />;
   if (isScoreboard) return <ScoreboardArtifact key={key} dataString={code} />;
   if (isDiagnostic) return <DiagnosticArtifact key={key} dataString={code} onRecover={() => onSendMessage('Apply the proposed diagnostic patch.')} />;
+  if (isJobManifest) return <JobManifestArtifact key={key} dataString={code} />;
   if (isBettingAngles) return <BettingAnglesArtifact key={key} dataString={code} />;
   if (isWorkspace) return <WorkspaceArtifact key={key} dataString={code} onEmailClick={(msgId, subject) => onSendMessage(`Open email "${subject}" (message_id: ${msgId})`)} />;
   if (isSidebar) return <SidebarArtifact key={key} dataString={code} onAction={onSendMessage} />;
@@ -299,10 +327,11 @@ interface MessageItemProps {
   workspaceToken?: string | null;
   onRetrySave?: () => void;
   executionPhase?: string | null;
+  onStop?: () => void;
 }
 
 const MessageItem: React.FC<MessageItemProps> = React.memo(
-  ({ msg, onSendMessage, workspaceToken, onRetrySave, executionPhase }) => {
+  ({ msg, onSendMessage, workspaceToken, onRetrySave, executionPhase, onStop }) => {
     const isUser = msg.role === 'user';
     const [msgCopied, setMsgCopied] = useState(false);
 
@@ -322,27 +351,12 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
 
     const renderContent = () => {
       if (isUser) {
-        return <p className="whitespace-pre-wrap text-[15px] leading-[1.6] text-sand">{msg.content}</p>;
+        return <p className="whitespace-pre-wrap text-[15px] leading-[1.6] text-slate-200">{msg.content}</p>;
       }
       if (!msg.content) {
-        return <ThinkingIndicator executionPhase={executionPhase} />;
+        return <ThinkingIndicator executionPhase={executionPhase} onStop={onStop} />;
       }
-      if (segments.length === 1 && segments[0].kind === 'html') {
-        return <div className={PROSE_CLASS} dangerouslySetInnerHTML={{ __html: segments[0].html }} />;
-      }
-      return (
-        <div className="space-y-2">
-          {segments.map((seg, i) => {
-            if (seg.kind === 'html') {
-              return <div key={`t-${i}`} className={PROSE_CLASS} dangerouslySetInnerHTML={{ __html: seg.html }} />;
-            }
-            if (seg.kind === 'ledger') {
-              return <ArtifactLedgerCard key={`l-${i}`} artifactId={seg.id} type={seg.type} />;
-            }
-            return renderCodeSegment(seg, `c-${i}`, onSendMessage, workspaceToken);
-          })}
-        </div>
-      );
+      return <MessageRenderer content={msg.content} onSendMessage={onSendMessage} workspaceToken={workspaceToken} />;
     };
 
     return (
@@ -352,9 +366,9 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 32, mass: 0.8 }}
         onAnimationComplete={() => { if (isUser) triggerHaptic('light'); }}
-        className={`group relative flex flex-col w-full py-6 ${isUser ? 'items-end' : 'items-start'}`}
+        className={`group relative flex flex-col w-full py-6 ${isUser ? 'items-end text-right' : 'items-start text-left'}`}
       >
-        <span className="font-mono text-[10px] text-taupe uppercase tracking-widest mb-2">
+        <span className="font-mono text-[10px] text-slate-500 uppercase tracking-widest mb-2">
           {isUser ? 'You' : 'Truth'}
         </span>
 
@@ -364,18 +378,14 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
           </div>
         )}
 
-        <div className={`max-w-[85%] sm:max-w-[90%] w-full ${isUser ? 'bg-charcoal px-6 py-5 border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] rounded-2xl rounded-tr-sm' : 'pr-8'}`}>
+        <div className={`max-w-[85%] sm:max-w-[90%] w-full ${isUser ? 'pl-8' : 'pr-8'}`}>
           {renderContent()}
 
           {msg.content && (
-            <div className={`flex items-center gap-3 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isUser ? 'justify-end' : ''}`}>
+            <div className={`flex items-center gap-3 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isUser ? 'justify-end' : 'justify-start'}`}>
               <button
                 onClick={handleCopyMessage}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono transition-all duration-200 active:scale-95 ${
-                  isUser 
-                    ? 'text-sand/50 hover:text-sand hover:bg-white/10' 
-                    : 'text-taupe hover:text-charcoal hover:bg-clay/20'
-                }`}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono transition-all duration-200 active:scale-95 text-slate-400 hover:text-slate-200 hover:bg-white/10"
                 aria-label={msgCopied ? 'Copied' : 'Copy message'}
               >
                 {msgCopied ? <Check size={12} className={isUser ? "text-emerald" : "text-bronze"} /> : <Copy size={12} />}
@@ -411,7 +421,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
 
 const TruthChat: React.FC<TruthChatProps> = ({
   messages, isLoading, onSendMessage, chatMode, thinkingMode,
-  onThinkingModeChange, workspaceToken, onRetrySave, executionPhase,
+  onThinkingModeChange, workspaceToken, onRetrySave, executionPhase, onStop
 }) => {
   const [isAtBottom, setIsAtBottom] = useState(true);
 
@@ -469,17 +479,11 @@ const TruthChat: React.FC<TruthChatProps> = ({
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 sm:px-8 pb-4 sm:pb-8 no-scrollbar"
+        className={`flex-1 overflow-y-auto px-4 sm:px-8 pb-4 sm:pb-8 no-scrollbar pwa-content-scroll ${messages.length === 0 ? 'flex flex-col items-center justify-center' : ''}`}
       >
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 mt-12">
-            <div className="flex items-center gap-3 px-4 py-2 bg-sand border border-clay/20 rounded-sm">
-              <span className="w-2 h-2 bg-emerald rounded-full animate-pulse"></span>
-              <span className="font-mono text-xs text-charcoal tracking-widest uppercase">Online</span>
-            </div>
-            <p className="text-taupe font-sans text-sm text-center max-w-sm">
-              Ask about tonight's games.
-            </p>
+          <div className="w-full max-w-3xl -mt-20">
+            <ChatSuggestions onSelect={onSendMessage} />
           </div>
         ) : (
           <div className="max-w-3xl mx-auto pt-8">
@@ -492,16 +496,16 @@ const TruthChat: React.FC<TruthChatProps> = ({
                   onReset={() => { if (prevUserMsg) onSendMessage(prevUserMsg); }}
                   fallbackRender={({ error, resetErrorBoundary }) => (
                     <div className="flex flex-col items-start w-full mb-6">
-                      <div className="p-5 bg-white border border-[#C45C5C]/15 rounded-2xl max-w-[85%] sm:max-w-[75%]">
+                      <div className="p-5 bg-[#18181b] border border-[#C45C5C]/20 rounded-2xl max-w-[85%] sm:max-w-[75%]">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-7 h-7 rounded-full bg-[#C45C5C]/10 flex items-center justify-center shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-[#C45C5C]/20 flex items-center justify-center shrink-0">
                             <AlertCircle size={14} className="text-[#C45C5C]" strokeWidth={2.5} />
                           </div>
-                          <span className="text-[14px] font-semibold tracking-tight text-ink">
+                          <span className="text-[14px] font-semibold tracking-tight text-white">
                             {error.message || "Couldn't load that"}
                           </span>
                         </div>
-                        <p className="text-[13.5px] leading-[1.6] text-charcoal/60 pl-10 mb-3">
+                        <p className="text-[13.5px] leading-[1.6] text-slate-400 pl-10 mb-3">
                           Something hiccuped on our end. Give it another shot.
                         </p>
                         <div className="pl-10">
@@ -523,6 +527,7 @@ const TruthChat: React.FC<TruthChatProps> = ({
                     workspaceToken={workspaceToken}
                     onRetrySave={onRetrySave}
                     executionPhase={executionPhase}
+                    onStop={onStop}
                   />
                 </ErrorBoundary>
               );
@@ -531,6 +536,8 @@ const TruthChat: React.FC<TruthChatProps> = ({
           </div>
         )}
       </div>
+
+
 
       <AnimatePresence>
         {!isAtBottom && messages.length > 0 && (
@@ -547,7 +554,7 @@ const TruthChat: React.FC<TruthChatProps> = ({
         )}
       </AnimatePresence>
 
-      <div className="bg-gradient-to-t from-sand via-sand/90 to-transparent pt-8">
+      <div className="pwa-footer pt-4 sm:pt-6">
         <ChatInput
           onSendMessage={onSendMessage}
           isLoading={isLoading}

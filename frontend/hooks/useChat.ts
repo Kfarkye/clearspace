@@ -1,228 +1,256 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Message } from '../types';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import type { Message } from '../types';
 import * as dataService from '../services/dataService';
 import * as mutationQueue from '../services/mutationQueue';
 
 export type ChatMode = 'operator' | 'standard';
 export type ThinkingMode = 'fast' | 'balanced' | 'deep' | 'web';
+export type ChatState = 'idle' | 'submitted' | 'thinking' | 'tool_running' | 'streaming' | 'stalled' | 'error' | 'done';
 
-// --- Source Routing: URL Normalization ---
-const DOMAIN_PATTERN = /(?<![@\w])([a-zA-Z0-9-]+\.(to|com|org|net|io|co|app|dev|ai|gg|tv|live|bet|sports|xyz))(?!\S*@)\b/gi;
-
-function normalizeUrls(input: string): string {
-  if (/https?:\/\//i.test(input)) return input;
-  return input.replace(DOMAIN_PATTERN, (match) => `https://${match}`);
-}
-
-function createTimestamp(): string {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
-function createMessage(role: 'user' | 'model', content: string, image?: string): Message {
-  return { id: `${role}_${Date.now()}`, role, content, timestamp: createTimestamp(), ...(image ? { image } : {}) };
+function chatModeForThinking(mode: ThinkingMode): ChatMode {
+  return mode === 'web' ? 'standard' : 'operator';
 }
 
 export function useChat(workspaceToken: string | null) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [chatMode, setChatMode] = useState<ChatMode>('operator');
-  const [thinkingModeRaw, setThinkingModeRaw] = useState<ThinkingMode>('fast');
-
-  const setThinkingMode = useCallback((mode: ThinkingMode) => {
-    setThinkingModeRaw(mode);
-    const newChatMode: ChatMode = mode === 'web' ? 'standard' : 'operator';
-    setChatMode(prev => {
-      if (prev !== newChatMode) {
-        setMessages([]);
-        setIsLoading(false);
-        setConversationId(null);
-      }
-      return newChatMode;
-    });
-  }, []);
-  
+  const [thinkingMode, setThinkingModeState] = useState<ThinkingMode>('normal');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [failedSaveIds, setFailedSaveIds] = useState<Set<string>>(new Set());
+  const [saveStatuses, setSaveStatuses] = useState<Record<string, string>>({});
   const [conversationTitle, setConversationTitle] = useState<string | null>(null);
+  
+  const [rawMessages, setRawMessages] = useState<any[]>([]);
+  const [chatState, setChatState] = useState<ChatState>('idle');
   const [executionPhase, setExecutionPhase] = useState<string | null>(null);
+  const [activeToolName, setActiveToolName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const isPersistenceReady = useRef(false);
   const isFirstExchange = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleNewChat = useCallback(async () => {
-    setMessages([]);
-    setIsLoading(false);
+  const chatModeRef = useRef(chatMode);
+  const thinkingModeRef = useRef(thinkingMode);
+  const conversationIdRef = useRef(conversationId);
+  const rawMessagesRef = useRef(rawMessages);
+  const chatStateRef = useRef(chatState);
+  const activeToolNameRef = useRef(activeToolName);
+  const lastEventTimeRef = useRef<number>(0);
+  const firstTokenTimeRef = useRef<number | null>(null);
+
+  useEffect(() => { chatModeRef.current = chatMode; }, [chatMode]);
+  useEffect(() => { thinkingModeRef.current = thinkingMode; }, [thinkingMode]);
+  useEffect(() => { conversationIdRef.current = conversationId; }, [conversationId]);
+  useEffect(() => { rawMessagesRef.current = rawMessages; }, [rawMessages]);
+  useEffect(() => { chatStateRef.current = chatState; }, [chatState]);
+  useEffect(() => { activeToolNameRef.current = activeToolName; }, [activeToolName]);
+
+  useEffect(() => {
+    if (!['submitted', 'thinking', 'tool_running', 'stalled'].includes(chatState)) return;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - lastEventTimeRef.current;
+      if (chatStateRef.current === 'streaming') return;
+
+      if (elapsed > 12000) {
+        setChatState('stalled');
+        setExecutionPhase('This is taking longer than usual.');
+      } else if (elapsed > 6000 && !activeToolNameRef.current) {
+        setExecutionPhase('Still working — checking tools/search...');
+      } else if (elapsed > 2000 && !activeToolNameRef.current) {
+        setChatState(prev => prev === 'submitted' ? 'thinking' : prev);
+        setExecutionPhase('Still thinking...');
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [chatState]);
+
+  const resetSession = useCallback(() => {
+    setRawMessages([]);
+    setConversationId(null);
     isFirstExchange.current = true;
     setConversationTitle(null);
-
-    if (isPersistenceReady.current) {
-      try {
-        const newId = await dataService.createConversation(chatMode);
-        setConversationId(newId);
-      } catch (e: any) {
-        if (e.message !== 'AUTH_REQUIRED') console.warn('[Persistence] Error:', e);
-        setConversationId(null);
-      }
-    } else {
-      setConversationId(null);
-    }
-  }, [chatMode]);
-
-  const handleModeSwitch = useCallback((mode: ChatMode) => {
-    if (mode === chatMode) return;
-    setChatMode(mode);
-    setMessages([]);
-    setIsLoading(false);
-    setConversationId(null);
-  }, [chatMode]);
-
-  const updateLastMessage = useCallback((text: string) => {
-    setMessages(prev => {
-      if (prev.length === 0) return prev;
-      const next = [...prev];
-      next[next.length - 1] = { ...next[next.length - 1], content: text };
-      return next;
-    });
+    setFailedSaveIds(new Set());
+    setSaveStatuses({});
+    setError(null);
   }, []);
 
-  const handleServerChat = useCallback(async (input: string, imageBase64?: string, imageMime?: string): Promise<string> => {
-    const history = messages.reduce<Array<{ role: string; content: string }>>((acc, m) => {
-      if ((m.role === 'user' || m.role === 'model') && m.content) {
-        acc.push({ role: m.role, content: m.content });
-      }
-      return acc;
-    }, []);
-
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input, history, mode: chatMode, thinkingMode: thinkingModeRaw, imageBase64, imageMime, workspaceToken }),
-    });
-
-    if (!response.ok) throw new Error(`Server error: ${response.status}`);
-    const data = await response.json();
-    if (!data.artifacts || data.artifacts.length === 0) {
-      if (data.error) throw new Error(data.error);
-      return 'No response from the server.';
-    }
-
-    const parts: string[] = [];
-    for (const asset of data.artifacts) {
-      const eventsList = asset.payload?.data?.events || asset.payload?.events || asset.payload?.games;
-      if (asset.type === 'SCOREBOARD' && eventsList && eventsList.length > 0) {
-        const games = eventsList.map((ev: any) => ({
-          id: ev.game_id || ev.id || String(Math.random()),
-          status: (ev.status_state || ev.status || '').replace(/^STATUS_/i, '').toLowerCase(),
-          date: ev.short_status || ev.date || ev.start_time || '',
-          broadcast: ev.broadcast,
-          note: ev.series_summary || ev.game_notes || '',
-          league: ev.league || asset.payload.league || 'mlb',
-          away_team: { name: ev.away_team?.name, abbr: ev.away_team?.abbreviation || ev.away_team?.abbr, score: ev.away_team?.score, record: ev.away_team?.record },
-          home_team: { name: ev.home_team?.name, abbr: ev.home_team?.abbreviation || ev.home_team?.abbr, score: ev.home_team?.score, record: ev.home_team?.record },
-          situation: ev.live_situation || ev.situation || ev.live,
-          leaders: ev.leaders,
-        }));
-        parts.push('```scoreboard\n' + JSON.stringify({ games, sources: asset.sources, summary_markdown: asset.payload.summary_markdown }) + '\n```');
-      } else if (asset.type === 'BETTING_ANALYSIS') {
-        const raw = asset.payload || {};
-        let transformed = raw;
-        if (raw.best_bets && !raw.analysis_markdown) {
-          transformed = {
-            analysis_markdown: raw.best_bets.map((b: any) => `### ${b.game}\n**${b.market}** (${b.odds})\n\n${b.rationale}`).join('\n\n---\n\n'),
-            angles: raw.best_bets.map((b: any) => ({
-              title: `${b.game} — ${b.market}`, odds: b.odds, edge: 'Sharp', book: b.book || 'DraftKings', deepLink: b.deepLink || '', description: b.rationale, recommendation: `${b.market} ${b.odds}`,
-            })),
-          };
-        }
-        parts.push('```bettingangles\n' + JSON.stringify({ ...transformed, sources: asset.sources }) + '\n```');
-      } else if (asset.type === 'DATA_TABLE') {
-        parts.push('```datatable\n' + JSON.stringify({ ...asset.payload, sources: asset.sources }) + '\n```');
-      } else if (asset.type === 'WORKSPACE_DOC') {
-        if (asset.payload?.text) {
-          parts.push(asset.payload.text);
-        } else if (asset.payload?.videos) {
-          parts.push('```youtube_media\n' + JSON.stringify(asset.payload) + '\n```');
-        } else {
-          parts.push(JSON.stringify(asset.payload));
-        }
-      } else if (asset.type !== 'SYSTEM_MESSAGE') {
-        parts.push(JSON.stringify(asset.payload || {}));
+  const handleNewChat = useCallback(async () => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    resetSession();
+    if (isPersistenceReady.current) {
+      try {
+        const newId = await dataService.createConversation(chatModeRef.current);
+        setConversationId(newId);
+      } catch (e: any) {
+        setConversationId(null);
       }
     }
+  }, [resetSession]);
 
-    const result = parts.join('\n\n');
-    updateLastMessage(result);
-    return result;
-  }, [messages, updateLastMessage, chatMode, thinkingModeRaw]);
+  const setThinkingMode = useCallback((mode: ThinkingMode) => {
+    setThinkingModeState(mode);
+    const nextChatMode = chatModeForThinking(mode);
+    if (nextChatMode !== chatModeRef.current) {
+      setChatMode(nextChatMode);
+      resetSession();
+    }
+  }, [resetSession]);
+
+  const handleModeSwitch = useCallback((mode: ChatMode) => {
+    if (mode === chatModeRef.current) return;
+    setChatMode(mode);
+    resetSession();
+  }, [resetSession]);
 
   const handleSendMessage = useCallback(async (input: string, imageBase64?: string, imageMime?: string) => {
+    const isLoading = chatState !== 'idle' && chatState !== 'done' && chatState !== 'error';
     if ((!input.trim() && !imageBase64) || isLoading) return;
 
-    setError(null);
-    setIsLoading(true);
-    setExecutionPhase('[ dispatching payload ]');
+    const userMsgId = `user_${Date.now()}`;
+    const userMessage = {
+      id: userMsgId,
+      role: 'user' as const,
+      content: input,
+      createdAt: new Date(),
+    };
 
-    const userMessage = createMessage('user', input, imageBase64 ? `data:${imageMime};base64,${imageBase64}` : undefined);
-    const modelMessage = createMessage('model', '');
-    setMessages(prev => [...prev, userMessage, modelMessage]);
+    setRawMessages(prev => [...prev, userMessage]);
 
-    if (isPersistenceReady.current && conversationId) {
-      mutationQueue.enqueue(userMessage.id, conversationId, { role: 'user', content: input, hasImage: !!imageBase64 }).catch(() => { });
-      setMessages(prev => {
-        const next = [...prev];
-        const userIdx = next.findIndex(m => m.id === userMessage.id);
-        if (userIdx >= 0) next[userIdx] = { ...next[userIdx], saveStatus: 'pending' };
-        return next;
-      });
-    }
+    const convId = conversationIdRef.current;
+    if (isPersistenceReady.current && convId) {
+      setSaveStatuses(prev => ({ ...prev, [userMsgId]: 'pending' }));
+      mutationQueue.enqueue(userMsgId, convId, { role: 'user', content: input, hasImage: !!imageBase64 }).catch(() => {});
 
-    try {
-      await handleServerChat(normalizeUrls(input), imageBase64, imageMime);
-    } catch (e: any) {
-      const errDetail = e?.message || String(e);
-      
-      // Agentic Diagnostic Loop
-      try {
-        setExecutionPhase('[ diagnostic reasoning... ]');
-        const diagnosticPrompt = `SYSTEM FAULT: ${errDetail}. Analyze the failure context and output a diagnostic payload using the \`\`\`diagnostic\`\`\` code block. Ensure it includes a JSON with root_cause, proposed_fix, invalidation_condition, risk_flag, and patch_code.`;
-        await handleServerChat(diagnosticPrompt);
-      } catch (nestedError) {
-        const userMsg = errDetail.includes('timed out') ? 'Request timed out. Try again.' : errDetail.includes('not connected') ? 'Workspace not connected. Click Connect to authenticate.' : `Error: ${errDetail}`;
-        setError(userMsg);
-        updateLastMessage(`Error: ${userMsg}`);
-      }
-    } finally {
-      setIsLoading(false);
-      setExecutionPhase(null);
-
-      if (isPersistenceReady.current && conversationId) {
-        setMessages(prev => {
-          const lastMsg = prev[prev.length - 1];
-          if (lastMsg?.role === 'model' && lastMsg.content) {
-            mutationQueue.enqueue(lastMsg.id, conversationId, { role: 'model', content: lastMsg.content }).catch(() => { });
-          }
-          return prev;
-        });
-
-        mutationQueue.flush((convId, msg) => dataService.appendMessage(convId, msg)).then(failedIds => {
-          if (failedIds.size > 0) {
-            setFailedSaveIds(prev => new Set([...prev, ...failedIds]));
-            setMessages(prev => prev.map(m => failedIds.has(m.id) ? { ...m, saveStatus: 'failed' } : m));
-          } else {
-            setMessages(prev => prev.map(m => m.saveStatus === 'pending' ? { ...m, saveStatus: 'saved' } : m));
-          }
-        }).catch(() => { });
-      }
-
-      if (isFirstExchange.current && isPersistenceReady.current && conversationId) {
+      if (isFirstExchange.current) {
         isFirstExchange.current = false;
         const title = input.slice(0, 30).trim() + (input.length > 30 ? '...' : '');
         setConversationTitle(title);
-        dataService.updateConversationTitle(conversationId, title).catch(() => { });
+        dataService.updateConversationTitle(convId, title).catch(() => {});
       }
     }
-  }, [isLoading, handleServerChat, updateLastMessage, conversationId]);
+
+    setChatState('submitted');
+    setExecutionPhase('Thinking...');
+    setActiveToolName(null);
+    lastEventTimeRef.current = Date.now();
+    firstTokenTimeRef.current = null;
+    setError(null);
+
+    const modelMsgId = `model_${Date.now()}`;
+    let modelContent = '';
+    
+    setRawMessages(prev => [...prev, { id: modelMsgId, role: 'model', content: modelContent, createdAt: new Date() }]);
+
+    abortControllerRef.current = new AbortController();
+
+    try {
+      // Deep Think sports triggers (analysis, betting, reasoning)
+      const sportsRegex = /\b(edge|pick|bet|betting|parlay|prop|props|over\/under|total|spread|ats|moneyline value|model|projection|prediction|trend|trends|compare|why|confidence|last 5|last 10|split|matchup|sharp|best play)\b/i;
+      const isSports = sportsRegex.test(input);
+      const targetMode = isSports ? 'deep' : thinkingModeRef.current;
+      
+      let endpoint = targetMode === 'deep' ? 'http://localhost:5001/api/chat' : 'http://localhost:5002/api/chat';
+      
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        endpoint = '/api/chat'; 
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortControllerRef.current.signal,
+        body: JSON.stringify({
+          messages: [...rawMessagesRef.current, userMessage],
+          workspaceToken,
+          agentMode: targetMode === 'deep' ? 'deep_think' : 'auto'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      if (!response.body) throw new Error("No response body");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        lastEventTimeRef.current = Date.now();
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (line.startsWith('0:')) {
+            try {
+               const chunkText = JSON.parse(line.slice(2));
+               
+               const toolMatch = chunkText.match(/\*\*\[tool\]\s+(.*?)\*\*/);
+               if (toolMatch) {
+                 const toolName = toolMatch[1];
+                 setChatState('tool_running');
+                 setActiveToolName(toolName);
+                 
+                 let label = `Running tool: ${toolName}`;
+                 if (toolName === 'query_spanner_readonly') label = 'Checking database...';
+                 else if (toolName === 'list_spanner_databases') label = 'Listing databases...';
+                 else if (toolName === 'get_spanner_database_ddl') label = 'Fetching schema...';
+                 else if (toolName === 'googleSearch') label = 'Searching the web...';
+                 else if (toolName === 'codeExecution') label = 'Running analysis...';
+                 setExecutionPhase(label);
+                 continue; // Skip appending meta-text
+               }
+               
+               if (!firstTokenTimeRef.current && chunkText.trim()) {
+                   firstTokenTimeRef.current = Date.now();
+                   setChatState('streaming');
+                   setExecutionPhase(null);
+               }
+               
+               modelContent += chunkText;
+               
+               setRawMessages(prev => prev.map(m => m.id === modelMsgId ? { ...m, content: modelContent } : m));
+            } catch (e) {
+               // Malformed chunk or partial string, skip logging to avoid noise
+            }
+          }
+        }
+      }
+      
+      // Final persistence step
+      const persistId = conversationIdRef.current;
+      if (isPersistenceReady.current && persistId) {
+        mutationQueue.enqueue(modelMsgId, persistId, { role: 'model', content: modelContent }).catch(() => {});
+        mutationQueue.flush((cId, msg) => dataService.appendMessage(cId, msg)).then(failedIds => {
+          if (failedIds.size > 0) {
+            setFailedSaveIds(prev => new Set([...prev, ...failedIds]));
+            setSaveStatuses(prev => {
+              const next = { ...prev };
+              failedIds.forEach(id => { next[id] = 'failed'; });
+              return next;
+            });
+          }
+        }).catch(() => {});
+      }
+      
+      setChatState('done');
+      setExecutionPhase(null);
+    } catch(e: any) {
+       if (e.name !== 'AbortError') {
+         setError(e.message);
+         setChatState('error');
+         setExecutionPhase('The response connection dropped. Try again.');
+       } else {
+         setChatState('done');
+         setExecutionPhase(null);
+       }
+    }
+  }, [chatState, workspaceToken]);
 
   useEffect(() => {
     async function checkPersistence() {
@@ -234,14 +262,13 @@ export function useChat(workspaceToken: string | null) {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ access_token: workspaceToken }),
-              credentials: 'same-origin',
             });
             if (res.ok) authed = true;
           } catch (e) { /* Ignore */ }
         }
         isPersistenceReady.current = authed;
-        if (authed && !conversationId) {
-          const newId = await dataService.createConversation(chatMode);
+        if (authed && !conversationIdRef.current) {
+          const newId = await dataService.createConversation(chatModeRef.current);
           setConversationId(newId);
         }
       } catch {
@@ -255,43 +282,29 @@ export function useChat(workspaceToken: string | null) {
   const loadConversation = useCallback(async (targetConversationId: string) => {
     try {
       const result = await dataService.getConversation(targetConversationId);
-      if (!result) { setError('Conversation not found.'); return; }
+      if (!result) return;
 
-      const restoredMode = (result.conversation.chatMode === 'operator' ? 'operator' : 'standard') as ChatMode;
-      const restoredMessages: Message[] = result.messages.map(m => ({
-        id: m.id, role: m.role as 'user' | 'model', content: m.content, timestamp: m.createdAt,
-      }));
+      setRawMessages(result.messages.map((m: any) => ({
+        id: m.id,
+        role: m.role === 'user' ? 'user' : 'model',
+        content: m.content,
+        createdAt: m.createdAt ? new Date(m.createdAt) : new Date()
+      })));
 
-      setMessages(restoredMessages);
       setConversationId(targetConversationId);
       setConversationTitle(result.conversation.title || null);
       isFirstExchange.current = false;
-
     } catch (e) {
       console.error('Failed to load conversation:', e);
-      setError('Failed to load conversation history.');
     }
   }, []);
 
   const clearHistory = useCallback(async () => {
-    setMessages([]);
-    setIsLoading(false);
-    isFirstExchange.current = true;
-    setConversationTitle(null);
-
-    if (isPersistenceReady.current && conversationId) {
-      try {
-        await dataService.deleteConversation(conversationId);
-        const newId = await dataService.createConversation(chatMode);
-        setConversationId(newId);
-      } catch (e) {
-        console.error('Failed to clear conversation:', e);
-      }
-    }
-  }, [conversationId, chatMode]);
+    await handleNewChat();
+  }, [handleNewChat]);
 
   const removeFailedMessage = useCallback((id: string) => {
-    setMessages(prev => prev.filter(m => m.id !== id));
+    setRawMessages(prev => prev.filter(m => m.id !== id));
     setFailedSaveIds(prev => {
       const next = new Set(prev);
       next.delete(id);
@@ -299,12 +312,33 @@ export function useChat(workspaceToken: string | null) {
     });
   }, []);
 
+  const handleStop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setChatState('done');
+      setExecutionPhase(null);
+    }
+  }, []);
+
+  const mappedMessages = useMemo(() => {
+    return rawMessages.map(m => {
+      return {
+        id: m.id,
+        role: m.role === 'model' ? 'model' : 'user',
+        content: m.content || '',
+        toolResults: [],
+        timestamp: m.createdAt?.toLocaleTimeString() || '',
+        saveStatus: saveStatuses[m.id],
+      };
+    }) as Message[];
+  }, [rawMessages, saveStatuses]);
+
   return {
-    messages,
-    isLoading,
+    messages: mappedMessages,
+    isLoading: chatState !== 'idle' && chatState !== 'done' && chatState !== 'error',
     error,
     chatMode,
-    thinkingMode: thinkingModeRaw,
+    thinkingMode,
     setThinkingMode,
     executionPhase,
     handleSendMessage,
@@ -316,5 +350,7 @@ export function useChat(workspaceToken: string | null) {
     clearHistory,
     failedSaveIds,
     removeFailedMessage,
+    chatState,
+    handleStop,
   };
 }
